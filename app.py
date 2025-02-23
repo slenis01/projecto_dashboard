@@ -46,7 +46,7 @@ st.markdown(
 st.title("📊 Tablero de Indicadores - Corresponsales Bancarios")
 
 # Reemplazar la sección de subida de archivo con lectura directa
-archivo_path = os.path.join('Resultado', 'indicadores.xlsx')  # Ajusta el nombre del archivo según corresponda
+archivo_path = os.path.join("Resultado", "informe_diario_20250222.xlsx")  # Ajusta el nombre del archivo según corresponda
 
 try:
     # Cargar datos directamente desde el archivo local

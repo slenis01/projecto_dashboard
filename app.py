@@ -43,6 +43,8 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+st.image(r"C:\Users\slenis.BANCOLOMBIA\Documents\projecto_dashboard\Logotipo_Wompi_WH.png", width=200)
+
 st.title("📊 Tablero de Indicadores - Corresponsales Bancarios")
 
 # Reemplazar la sección de subida de archivo con lectura directa
@@ -184,6 +186,89 @@ try:
                     'bar': {'color': "#00825A"}}
         ))
         st.plotly_chart(fig)
+
+    # Crear un separador visual
+    st.markdown("---")
+    st.subheader("📍 Distribución Geográfica de Corresponsales")
+
+    # Función para limpiar dataframes
+    def limpiar_dataframe(df):
+        df['Latitud'] = df['Latitud'].replace('', pd.NA)
+        df['Longitud'] = df['Longitud'].replace('', pd.NA)
+        df = df.dropna(subset=['Latitud', 'Longitud'])
+        df['Codigo_Punto'] = df['Codigo_Punto'].astype(str)
+        df['Aliado'] = df['Aliado'].astype(str)
+        df['Latitud'] = df['Latitud'].astype(float)
+        df['Longitud'] = df['Longitud'].astype(float)
+        return df
+
+    # Crear dos columnas para organizar los controles
+    col_selector, col_stats = st.columns([3, 1])
+
+    with col_selector:
+        # Crear selector en Streamlit
+        opcion_mapa = st.selectbox(
+            'Seleccione el tipo de visualización:',
+            ['Corresponsales uno a uno', 'Aperturas', 'Cierres']
+        )
+
+    # Leer los archivos usando rutas relativas
+    df_base_completa = pd.read_csv('Resultado/df_base_completa.csv')
+    df_base_cierres = pd.read_csv('Resultado/aperturas_20250223.csv')
+    df_base_aperturas = pd.read_csv('Resultado/aperturas_20250223.csv')
+
+    # Limpiar todos los dataframes
+    df_base_completa = limpiar_dataframe(df_base_completa)
+    df_base_cierres = limpiar_dataframe(df_base_cierres)
+    df_base_aperturas = limpiar_dataframe(df_base_aperturas)
+
+    # Función para crear mapa
+    def crear_mapa(df, titulo):
+        fig = px.scatter_map(
+            df,
+            lat='Latitud',
+            lon='Longitud',
+            hover_data=['Codigo_Punto', 'Aliado'],
+            zoom=5,
+            height=600,  # Reducido para mejor integración
+            color='Aliado',
+            title=titulo,
+            color_discrete_map={
+                "VALE+": "#00825A",
+                "REVAL": "#B0F2AE"
+            }
+        )
+        
+        fig.update_layout(
+            mapbox_style="carto-positron",
+            mapbox=dict(
+                center=dict(lat=4.5709, lon=-74.2973),
+            )
+        )
+        return fig
+
+    # Mostrar mapa según selección
+    if opcion_mapa == 'Corresponsales uno a uno':
+        mapa = crear_mapa(df_base_completa, 'Distribución Total de Corresponsales')
+        st.plotly_chart(mapa, use_container_width=True)
+        
+    elif opcion_mapa == 'Aperturas':
+        mapa = crear_mapa(df_base_aperturas, 'Distribución de Aperturas')
+        st.plotly_chart(mapa, use_container_width=True)
+        
+    else:  # Cierres
+        mapa = crear_mapa(df_base_cierres, 'Distribución de Cierres')
+        st.plotly_chart(mapa, use_container_width=True)
+
+    with col_stats:
+        # Mostrar estadísticas básicas
+        st.markdown("### 📊 Estadísticas")
+        if opcion_mapa == 'Corresponsales uno a uno':
+            st.metric("Total de corresponsales", f"{len(df_base_completa):,}")
+        elif opcion_mapa == 'Aperturas':
+            st.metric("Total de aperturas", f"{len(df_base_aperturas):,}")
+        else:
+            st.metric("Total de cierres", f"{len(df_base_cierres):,}")
 
 except Exception as e:
     st.error(f"⚠️ Error al leer el archivo: {e}")

@@ -43,7 +43,7 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-st.image(r"C:\Users\slenis.BANCOLOMBIA\Documents\projecto_dashboard\Logotipo_Wompi_WH.png", width=200)
+st.image("assets/Logotipo_Wompi_WH.png", width=200)
 
 st.title("📊 Tablero de Indicadores - Corresponsales Bancarios")
 

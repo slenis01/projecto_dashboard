@@ -19,7 +19,11 @@ st.set_page_config(
     page_title="Tablero Indicadores CB",
     layout="wide",
     initial_sidebar_state="collapsed",
-    menu_items=None
+    menu_items={
+        "Get Help": None,
+        "Report a bug": None,
+        "About": None
+    }
 )
 
 # Agregar CSS personalizado con la fuente y tema oscuro

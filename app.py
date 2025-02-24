@@ -15,12 +15,24 @@ font_path = os.path.join('assets', 'CIBFONTSANS-REGULAR.OTF')
 font_base64 = get_font_base64(font_path)
 
 # Configuración de la página
-st.set_page_config(page_title="Tablero Indicadores CB", layout="wide")
+st.set_page_config(
+    page_title="Tablero Indicadores CB",
+    layout="wide",
+    initial_sidebar_state="collapsed",
+    menu_items=None
+)
 
-# Agregar CSS personalizado con la fuente
+# Agregar CSS personalizado con la fuente y tema oscuro
 st.markdown(
     f"""
     <style>
+        /* Tema oscuro forzado */
+        .stApp {{
+            background-color: #0E1117;
+            color: white;
+        }}
+        
+        /* Fuente personalizada */
         @font-face {{
             font-family: 'CIBFont';
             src: url(data:font/otf;base64,{font_base64}) format('opentype');
@@ -29,14 +41,27 @@ st.markdown(
         * {{
             font-family: 'CIBFont', sans-serif !important;
         }}
+        
         .stTitle {{
             font-family: 'CIBFont', sans-serif !important;
         }}
+        
         div[data-testid="stMetricValue"] {{
             font-family: 'CIBFont', sans-serif !important;
         }}
+        
         .plotly-graph-div {{
             font-family: 'CIBFont', sans-serif !important;
+        }}
+
+        /* Estilo para widgets */
+        .stSelectbox label,
+        .stRadio label {{
+            color: white !important;
+        }}
+
+        .stMarkdown {{
+            color: white;
         }}
     </style>
     """,
@@ -45,7 +70,7 @@ st.markdown(
 
 st.image("assets/Logotipo_Wompi_WH.png", width=200)
 
-st.title("📊 Tablero de Indicadores - Corresponsales Bancarios")
+st.title(" 📈Tablero de Indicadores - Corresponsales Bancarios")
 
 # Reemplazar la sección de subida de archivo con lectura directa
 archivo_path = os.path.join("Resultado", "informe_diario_20250222.xlsx")  # Ajusta el nombre del archivo según corresponda
@@ -61,18 +86,37 @@ try:
     opcion_seleccionada = st.radio("Selecciona el tipo de dato:", ["VALE+", "REVAL", "Total"], horizontal=True)
 
     # 📌 Extraer valores específicos
+    # Tamaño de red
     cantidad_total = df[df["Indicador"] == "Cantidad de puntos"]["Total"].values[0]
     cantidad_vale = df[df["Indicador"] == "Cantidad de puntos"]["VALE+"].values[0]
     cantidad_reval = df[df["Indicador"] == "Cantidad de puntos"]["REVAL"].values[0]
+
+    # 📌Puntos bloqueados por no compensacion
+    # puntos activos 
+    seccion_bloqueo_activos_total = df[df["Indicador"] == "Puntos bloqueados - Activos"]["Total"].values[0]
+    seccion_bloqueo_activos_vale = df[df["Indicador"] == "Puntos bloqueados - Activos"]["VALE+"].values[0]
+    seccion_bloqueo_activos_reval = df[df["Indicador"] == "Puntos bloqueados - Activos"]["REVAL"].values[0]
+
+    # puntos bloqueados
+    seccion_bloqueo_bloqueados_total = df[df["Indicador"] == "Puntos bloqueados - Inactivos"]["Total"].values[0]
+    seccion_bloqueo_bloqueados_vale = df[df["Indicador"] == "Puntos bloqueados - Inactivos"]["VALE+"].values[0]
+    seccion_bloqueo_bloqueados_reval = df[df["Indicador"] == "Puntos bloqueados - Inactivos"]["REVAL"].values[0]
+
+    # 📌 Puntos mala practica
+    mala_practica_total = df[df["Indicador"] == "Puntos con malas prácticas (%)"]["Total"].values[0]
+    mala_practica_vale = df[df["Indicador"] == "Puntos con malas prácticas (%)"]["VALE+"].values[0]
+    mala_practica_reval = df[df["Indicador"] == "Puntos con malas prácticas (%)"]["REVAL"].values[0]
+
+
 
     # 📌 Calcular el porcentaje de participación
     porcentaje_vale = (cantidad_vale / cantidad_total) * 100
     porcentaje_reval = (cantidad_reval / cantidad_total) * 100
 
-    # 📌 Crear columnas para distribuir contenido
+    # 📌 Crear columnas para distribuir contenido (primera fila)
     col1, col2, col3 = st.columns([1, 1, 1])
 
-    # ✅ Mostrar el Total de la Red en una métrica grande
+    # Primera fila de contenido
     with col1:
         valor_mostrar = {
             "VALE+": cantidad_vale,
@@ -90,8 +134,8 @@ try:
             unsafe_allow_html=True
         )
 
-    # ✅ Mostrar el gráfico de barras con las opciones seleccionadas
     with col2:
+        # ✅ Mostrar el gráfico de barras con las opciones seleccionadas
         if opcion_seleccionada == "Total":
             # 📊 Gráfico de Barras mostrando ambas categorías (VALE+ y REVAL)
             datos_barra = pd.DataFrame({
@@ -187,6 +231,87 @@ try:
         ))
         st.plotly_chart(fig)
 
+    # 📌 Crear columnas para distribuir contenido (segunda fila)
+    col4, col5, col6 = st.columns([1, 1, 1])
+
+    st.markdown("---")
+
+    # Segunda fila de contenido
+    with col4:
+        # Seleccionar el valor según la opción
+        valor_activos = {
+            "VALE+": seccion_bloqueo_activos_vale,
+            "REVAL": seccion_bloqueo_activos_reval,
+            "Total": seccion_bloqueo_activos_total
+        }[opcion_seleccionada]
+
+        fig = go.Figure(go.Indicator(
+            mode = "number+gauge+delta",
+            gauge = {'shape': "bullet"},
+            value = valor_activos,
+            delta = {'reference': 200},
+            domain = {'x': [0.1, 1], 'y': [0.2, 0.9]},
+            title = {'text': f"Tamaño de Red {opcion_seleccionada}"}
+        ))
+        # Asegurarse de que el plotly_chart esté dentro del bloque 'with'
+        st.plotly_chart(fig, use_container_width=True)
+
+    with col5:
+        # Seleccionar el valor de puntos activos según la opción
+        valor_activos = {
+            "VALE+": seccion_bloqueo_activos_vale,
+            "REVAL": seccion_bloqueo_activos_reval,
+            "Total": seccion_bloqueo_activos_total
+        }[opcion_seleccionada]
+
+        fig = go.Figure(go.Indicator(
+            mode = "gauge+number",
+            value = valor_activos,  # Usar el valor de puntos activos
+            title = {'text': f"Puntos Activos {opcion_seleccionada}"},
+            gauge = {
+                'axis': {'range': [0, 300]},  # Cambiado a 500
+                'bar': {'color': "#00825A"},
+                'bgcolor': "white",
+                'borderwidth': 2,
+                'bordercolor': "gray",
+                'steps': [
+                    {'range': [0, 250], 'color': 'lightgray'},  # Mitad de 500
+                    {'range': [250, 500], 'color': 'gray'}      # Hasta 500
+                ],
+                'threshold': {
+                    'line': {'color': "red", 'width': 4},
+                    'thickness': 0.75,
+                    'value': 200  # 80% de 500
+                }
+            }
+        ))
+
+        # Mostrar el gráfico
+        st.plotly_chart(fig, use_container_width=True)
+        
+    with col6:
+        # Seleccionar el valor de mala práctica según la opción, eliminar el % y convertir a float
+        valor_mala_practica = float({
+            "VALE+": str(mala_practica_vale).replace('%', ''),
+            "REVAL": str(mala_practica_reval).replace('%', ''),
+            "Total": str(mala_practica_total).replace('%', '')
+        }[opcion_seleccionada])
+        
+        st.markdown(
+            f"""
+            <div style="
+                background-color: #00825A;
+                border-radius: 10px;
+                padding: 20px;
+                text-align: center;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
+                <h3 style="color: white;">Mala Práctica {opcion_seleccionada}</h3>
+                <h1 style="font-size: 3.5em; margin: 10px 0;">{valor_mala_practica:,.2f}%</h1>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
     # Crear un separador visual
     st.markdown("---")
     st.subheader("📍 Distribución Geográfica de Corresponsales")
@@ -214,13 +339,10 @@ try:
 
     # Leer los archivos usando rutas relativas
     df_base_completa = pd.read_csv('Resultado/df_base_completa.csv')
-    st.write("Columnas en df_base_completa:", df_base_completa.columns.tolist())  # Debug
     
     df_base_cierres = pd.read_csv('Resultado/aperturas_20250223.csv')
-    st.write("Columnas en df_base_cierres:", df_base_cierres.columns.tolist())  # Debug
     
     df_base_aperturas = pd.read_csv('Resultado/aperturas_20250223.csv')
-    st.write("Columnas en df_base_aperturas:", df_base_aperturas.columns.tolist())  # Debug
 
     # Limpiar todos los dataframes
     df_base_completa = limpiar_dataframe(df_base_completa)

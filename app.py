@@ -72,8 +72,29 @@ st.image("assets/Logotipo_Wompi_WH.png", width=200)
 
 st.title(" 📈Tablero de Indicadores - Corresponsales Bancarios")
 
-# Reemplazar la sección de subida de archivo con lectura directa
-archivo_path = os.path.join("Resultado", "informe_diario_20250222.xlsx")  # Ajusta el nombre del archivo según corresponda
+# Definir la ruta del archivo primero
+archivo_path = os.path.join("Resultado", "informe_diario_20250222.xlsx")
+
+# Obtener la fecha de última modificación del archivo
+ultima_actualizacion = os.path.getmtime(archivo_path)
+fecha_actualizacion = pd.to_datetime(ultima_actualizacion, unit='s').strftime("%d/%m/%Y %H:%M:%S")
+
+# Mostrar la última actualización con estilo
+st.markdown(
+    f"""
+    <div style="
+        padding: 5px 15px;
+        border-radius: 5px;
+        background-color: rgba(255, 255, 255, 0.1);
+        display: inline-block;
+        margin-bottom: 20px;">
+        <p style="margin: 0; color: #B0B0B0; font-size: 0.9em;">
+            🕒 Última actualización: {fecha_actualizacion}
+        </p>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
 try:
     # Cargar datos directamente desde el archivo local

@@ -214,8 +214,13 @@ try:
 
     # Leer los archivos usando rutas relativas
     df_base_completa = pd.read_csv('Resultado/df_base_completa.csv')
+    st.write("Columnas en df_base_completa:", df_base_completa.columns.tolist())  # Debug
+    
     df_base_cierres = pd.read_csv('Resultado/aperturas_20250223.csv')
+    st.write("Columnas en df_base_cierres:", df_base_cierres.columns.tolist())  # Debug
+    
     df_base_aperturas = pd.read_csv('Resultado/aperturas_20250223.csv')
+    st.write("Columnas en df_base_aperturas:", df_base_aperturas.columns.tolist())  # Debug
 
     # Limpiar todos los dataframes
     df_base_completa = limpiar_dataframe(df_base_completa)

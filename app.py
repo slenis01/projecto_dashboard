@@ -31,11 +31,12 @@ st.set_page_config(
 st.markdown(
     f"""
     <style>
-        /* Tema oscuro forzado */
+        /* Tema oscuro forzado - COMENTADO
         .stApp {{
             background-color: #0E1117;
             color: white;
         }}
+        */
         
         /* Fuente personalizada */
         @font-face {{
@@ -62,11 +63,11 @@ st.markdown(
         /* Estilo para widgets */
         .stSelectbox label,
         .stRadio label {{
-            color: white !important;
+            color: inherit !important;
         }}
 
         .stMarkdown {{
-            color: white;
+            color: inherit;
         }}
     </style>
     """,
@@ -166,9 +167,9 @@ try:
 
     # Primera fila - Valor único centrado
     valor_mostrar = {
-        "VALE+": Cantidad_de_puntos_vale,
-        "REVAL": Cantidad_de_puntos_reval,
-        "Total": Cantidad_de_puntos_total
+    "VALE+": Cantidad_de_puntos_vale,
+    "REVAL": Cantidad_de_puntos_reval,
+    "Total": Cantidad_de_puntos_total
     }[opcion_seleccionada]
     
     st.markdown(
@@ -218,8 +219,8 @@ try:
             }
         ))
         fig.update_layout(
-            height=300,  # Aumentando un poco la altura
-            margin=dict(t=50, b=30, l=20, r=20)  # Aumentando el margen superior
+        height=300,  # Aumentando un poco la altura
+        margin=dict(t=50, b=30, l=20, r=20)  # Aumentando el margen superior
         )
         st.plotly_chart(fig, use_container_width=True)
 
@@ -312,7 +313,7 @@ try:
         # Gauge para Productividad
         productividad_df = df[df["Indicador"] == "Productividad - Cumple meta (%)"]["Total"].values[0]
         productividad_total = float(str(productividad_df).replace('%', ''))
-        
+
         fig = go.Figure(go.Indicator(
             mode = "gauge+number",
             value = productividad_total,
@@ -650,8 +651,15 @@ try:
                 df_filtered = df_base_cierres if opcion_aliado == 'Todos' else df_base_cierres[df_base_cierres['Aliado'] == opcion_aliado]
                 st.metric("Total de cierres", f"{len(df_filtered):,}")
 
+    except FileNotFoundError:
+        st.error("No se encontró el archivo de informe diario en la carpeta Resultado")
+        st.stop()
     except Exception as e:
-        st.error(f"⚠️ Error al leer el archivo: {e}")
+        st.error(f"Error al leer el archivo: {str(e)}")
+        st.stop()
+
+except Exception as e:
+    st.error(f"⚠️ Error al leer el archivo: {e}")
 
 except FileNotFoundError:
     st.error("No se encontró el archivo de informe diario en la carpeta Resultado")

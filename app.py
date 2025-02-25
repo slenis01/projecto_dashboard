@@ -198,7 +198,7 @@ try:
                     'weight': 'bold'
                 }
             },
-            number = {'suffix': '%', 'font': {'size': 30}},  # Aumentando tamaño del número
+            number = {'suffix': '%', 'font': {'size': 50}},  # Aumentando tamaño del número
             gauge = {
                 'axis': {'range': [-100, 100]},
                 'bar': {'color': "#99D1FC", 'thickness': 0.90},
@@ -235,7 +235,7 @@ try:
                     'weight': 'bold'
                 }
             },
-            number = {'font': {'size': 30}},  # Aumentando tamaño del número
+            number = {'font': {'size': 50}},  # Aumentando tamaño del número
             gauge = {
                 'axis': {'range': [0, 5]},
                 'bar': {'color': "#99D1FC", 'thickness': 0.90},
@@ -279,7 +279,7 @@ try:
                     'weight': 'bold'
                 }
             },
-            number = {'suffix': '%', 'font': {'size': 30}},  # Aumentando tamaño del número
+            number = {'suffix': '%', 'font': {'size': 50}},  # Aumentando tamaño del número
             gauge = {
                 'axis': {'range': [0, 100]},
                 'bar': {'color': "#99D1FC", 'thickness': 0.90},
@@ -323,7 +323,7 @@ try:
                     'weight': 'bold'
                 }
             },
-            number = {'suffix': '%', 'font': {'size': 100}},  # Tamaño número aumentado
+            number = {'suffix': '%', 'font': {'size': 50}},  # Tamaño número aumentado
             gauge = {
                 'axis': {'range': [0, 100]},
                 'bar': {'color': "#99D1FC", 'thickness': 0.90},
@@ -381,7 +381,7 @@ try:
                     'weight': 'bold'
                 }
             },
-            number = {'suffix': '%', 'font': {'size': 30}},
+            number = {'suffix': '%', 'font': {'size': 50}},
             gauge = {
                 'axis': {'range': [0, 100]},
                 'bar': {'color': "#99D1FC", 'thickness': 0.90},
@@ -426,7 +426,7 @@ try:
                     'weight': 'bold'
                 }
             },
-            number = {'suffix': '%', 'font': {'size': 30}},
+            number = {'suffix': '%', 'font': {'size': 50}},
             gauge = {
                 'axis': {'range': [0, 100]},
                 'bar': {'color': "#99D1FC", 'thickness': 0.90},

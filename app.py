@@ -437,7 +437,7 @@ try:
                 'steps': [
                     {'range': [0, 40], 'color': "#FF4B4B"},
                     {'range': [40, 70], 'color': "#FAFAFA"},
-                    {'range': [70, 100], 'color': "#B0F2AE"}
+                    {'range': [70, 100], 'color': "#B0F2AE"} # rojo claro
                 ],
                 'threshold': {
                     'line': {'color': "red", 'width': 4},
@@ -554,14 +554,14 @@ try:
         df['Longitud'] = df['Longitud'].astype(float)
         return df
 
-    # Crear dos columnas para organizar los controles
-    col_selector, col_filter, col_stats = st.columns([2, 1, 1])
+    # Crear columnas para organizar los controles
+    col_selector, col_filter, col_map_type, col_stats = st.columns([2, 1, 1, 1])
 
     with col_selector:
-        # Crear selector en Streamlit
+        # Actualizar selector para incluir "Todos"
         opcion_mapa = st.selectbox(
             'Seleccione el tipo de visualización:',
-            ['Aperturas', 'Cierres']
+            ['Todos', 'Aperturas', 'Cierres']
         )
     
     with col_filter:
@@ -569,6 +569,13 @@ try:
         opcion_aliado = st.selectbox(
             'Seleccione el aliado:',
             ['Todos', 'VALE+', 'REVAL']
+        )
+
+    with col_map_type:
+        # Agregar selector de tipo de mapa
+        tipo_mapa = st.selectbox(
+            'Tipo de Mapa:',
+            ['Puntos', 'Densidad']
         )
 
     try:
@@ -579,6 +586,8 @@ try:
         # Leer los archivos usando las rutas encontradas
         df_base_cierres = pd.read_csv(ruta_cierres)
         df_base_aperturas = pd.read_csv(ruta_aperturas)
+        df_base_cierres.rename(columns={'Fuerza_Comercial': 'Aliado'}, inplace=True)
+        df_base_aperturas.rename(columns={'Fuerza_Comercial': 'Aliado'}, inplace=True)
 
         # Mostrar la fecha de última actualización basada en el archivo de aperturas
         ultima_actualizacion = os.path.getmtime(ruta_aperturas)
@@ -588,32 +597,56 @@ try:
         df_base_cierres = limpiar_dataframe(df_base_cierres)
         df_base_aperturas = limpiar_dataframe(df_base_aperturas)
 
-        # Función para crear mapa
-        def crear_mapa(df, titulo):
+        # Función para crear mapa de puntos
+        def crear_mapa_puntos(df, titulo):
             # Filtrar por aliado si se seleccionó uno específico
             if opcion_aliado != 'Todos':
                 df = df[df['Aliado'] == opcion_aliado]
 
-            fig = px.scatter_map(
-                df,
-                lat='Latitud',
-                lon='Longitud',
-                hover_data={
-                    'Codigo_Punto': True,
-                    'Aliado': True,
-                    'Latitud': False,  # Ocultar latitud
-                    'Longitud': False  # Ocultar longitud
-                },
-                zoom=5,
-                height=600,
-                color='Aliado',
-                title=titulo,
-                size=[20] * len(df),
-                color_discrete_map={
-                    "VALE+": "#00825A",
-                    "REVAL": "#B0F2AE"
-                }
-            )
+            if opcion_mapa == 'Todos':
+                # Para vista 'Todos', colorear por tipo
+                fig = px.scatter_mapbox(
+                    df,
+                    lat='Latitud',
+                    lon='Longitud',
+                    hover_data={
+                        'Codigo_Punto': True,
+                        'Aliado': True,
+                        'Tipo': True,
+                        'Latitud': False,
+                        'Longitud': False
+                    },
+                    color='Tipo',
+                    color_discrete_map={
+                        'Apertura': '#00825A',  # Verde para aperturas
+                        'Cierre': '#7d1b18'     # Rojo para cierres
+                    },
+                    zoom=5,
+                    height=600,
+                    title=titulo
+                )
+            else:
+                # Para vistas individuales, colorear por aliado
+                fig = px.scatter_mapbox(
+                    df,
+                    lat='Latitud',
+                    lon='Longitud',
+                    hover_data={
+                        'Codigo_Punto': True,
+                        'Aliado': True,
+                        'Tipo': True,
+                        'Latitud': False,
+                        'Longitud': False
+                    },
+                    color='Aliado',
+                    color_discrete_map={
+                        "VALE+": "#00825A" if opcion_mapa == 'Aperturas' else "#7d1b18",
+                        "REVAL": "#B0F2AE" if opcion_mapa == 'Aperturas' else "#d4150f"
+                    },
+                    zoom=5,
+                    height=600,
+                    title=titulo
+                )
             
             fig.update_layout(
                 mapbox_style="carto-positron",
@@ -622,29 +655,114 @@ try:
                 )
             )
             
-            # Ajustar el tamaño y opacidad de los marcadores
             fig.update_traces(
                 marker=dict(
                     size=10,
                     opacity=0.7
                 ),
                 selector=dict(mode='markers'),
-                hovertemplate="<b>Código Punto:</b> %{customdata[0]}<br><b>Aliado:</b> %{customdata[1]}<br><extra></extra>"
+                hovertemplate="<b>Código Punto:</b> %{customdata[0]}<br><b>Aliado:</b> %{customdata[1]}<br><b>Tipo:</b> %{customdata[2]}<br><extra></extra>"
             )
             
             return fig
+
+        # Función para crear mapa de densidad
+        def crear_mapa_densidad(df, titulo):
+            # Filtrar por aliado si se seleccionó uno específico
+            if opcion_aliado != 'Todos':
+                df = df[df['Aliado'] == opcion_aliado]
+
+            # Redondear coordenadas para agrupar puntos cercanos (2 decimales para más agrupamiento)
+            df['Latitud_round'] = df['Latitud'].round(2)
+            df['Longitud_round'] = df['Longitud'].round(2)
+
+            # Crear un DataFrame con el conteo de puntos por ubicación
+            density_df = df.groupby(['Latitud_round', 'Longitud_round']).agg({
+                'Tipo': 'count',
+                'Latitud': 'first',
+                'Longitud': 'first'
+            }).reset_index()
+            
+            density_df.rename(columns={'Tipo': 'count'}, inplace=True)
+
+            # Escala de colores fríos a cálidos
+            color_scale = [
+                [0, '#313695'],    # Azul oscuro
+                [0.2, '#4575B4'],  # Azul medio
+                [0.4, '#74ADD1'],  # Azul claro
+                [0.6, '#FED976'],  # Amarillo
+                [0.8, '#FD8D3C'],  # Naranja
+                [1.0, '#BD0026']   # Rojo intenso
+            ]
+
+            # Radio unificado para todas las vistas
+            radius_val = 50  # Aumentado para mejor visualización
+
+            fig = px.density_mapbox(
+                density_df,
+                lat='Latitud',
+                lon='Longitud',
+                z='count',
+                radius=radius_val,
+                zoom=5,
+                height=600,
+                title=titulo,
+                opacity=0.9,
+                color_continuous_scale=color_scale
+            )
+
+            fig.update_layout(
+                mapbox_style="carto-positron",
+                mapbox=dict(
+                    center=dict(lat=4.5709, lon=-74.2973),
+                )
+            )
+
+            # Ocultar la información del hover
+            fig.update_traces(
+                hoverinfo='none',
+                hovertemplate=None
+            )
+
+            return fig
         
-        if opcion_mapa == 'Aperturas':
-            mapa = crear_mapa(df_base_aperturas, 'Distribución de Aperturas')
-            st.plotly_chart(mapa, use_container_width=True)
+        # Modificar la lógica de visualización del mapa
+        if opcion_mapa == 'Todos':
+            # Combinar dataframes de aperturas y cierres
+            df_base_aperturas['Tipo'] = 'Apertura'
+            df_base_cierres['Tipo'] = 'Cierre'
+            df_combinado = pd.concat([df_base_aperturas, df_base_cierres])
+            
+            if tipo_mapa == 'Puntos':
+                mapa = crear_mapa_puntos(df_combinado, 'Distribución de Aperturas y Cierres')
+            else:
+                mapa = crear_mapa_densidad(df_combinado, 'Densidad de Aperturas y Cierres')
+                
+        elif opcion_mapa == 'Aperturas':
+            df_base_aperturas['Tipo'] = 'Apertura'
+            
+            if tipo_mapa == 'Puntos':
+                mapa = crear_mapa_puntos(df_base_aperturas, 'Distribución de Aperturas')
+            else:
+                mapa = crear_mapa_densidad(df_base_aperturas, 'Densidad de Aperturas')
+                
         else:  # Cierres
-            mapa = crear_mapa(df_base_cierres, 'Distribución de Cierres')
-            st.plotly_chart(mapa, use_container_width=True)
+            df_base_cierres['Tipo'] = 'Cierre'
+            
+            if tipo_mapa == 'Puntos':
+                mapa = crear_mapa_puntos(df_base_cierres, 'Distribución de Cierres')
+            else:
+                mapa = crear_mapa_densidad(df_base_cierres, 'Densidad de Cierres')
+
+        st.plotly_chart(mapa, use_container_width=True)
 
         with col_stats:
-            # Mostrar estadísticas básicas
+            # Actualizar estadísticas para incluir vista combinada
             st.markdown("### 📊 Estadísticas")
-            if opcion_mapa == 'Aperturas':
+            if opcion_mapa == 'Todos':
+                df_filtered = df_combinado if opcion_aliado == 'Todos' else df_combinado[df_combinado['Aliado'] == opcion_aliado]
+                st.metric("Total de puntos", f"{len(df_filtered):,}")
+            elif opcion_mapa == 'Aperturas':
                 df_filtered = df_base_aperturas if opcion_aliado == 'Todos' else df_base_aperturas[df_base_aperturas['Aliado'] == opcion_aliado]
                 st.metric("Total de aperturas", f"{len(df_filtered):,}")
             else:

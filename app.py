@@ -74,8 +74,30 @@ st.markdown(
     unsafe_allow_html=True
 )
 
+# Detectar el tema automáticamente usando CSS
+st.markdown("""
+    <style>
+        /* Por defecto, mostrar el logo claro */
+        #logo-claro { display: block; }
+        #logo-oscuro { display: none; }
+        
+        /* En modo oscuro, invertir la visibilidad */
+        @media (prefers-color-scheme: dark) {
+            #logo-claro { display: none; }
+            #logo-oscuro { display: block; }
+        }
+    </style>
+""", unsafe_allow_html=True)
 
-st.image("assets/Logotipo_Wompi_WH.png", width=300)
+# Mostrar ambos logos con IDs para control de visibilidad
+st.markdown(f"""
+    <div id="logo-claro">
+        <img src="data:image/png;base64,{base64.b64encode(open('assets/Logotipo_Wompi_VS2.png', 'rb').read()).decode()}" width="300">
+    </div>
+    <div id="logo-oscuro">
+        <img src="data:image/png;base64,{base64.b64encode(open('assets/Logotipo_Wompi_WH.png', 'rb').read()).decode()}" width="300">
+    </div>
+""", unsafe_allow_html=True)
 
 st.title(" 📈Tablero de Indicadores - Corresponsales Bancarios")
 
@@ -349,7 +371,7 @@ try:
         )
         st.plotly_chart(fig, use_container_width=True)
         
-    with col6:
+    with col6: # SEGUROS
         # Seleccionar el valor de puntos activos según la opción
         valor_activos = {
             "VALE+": seguros_vale,
@@ -367,7 +389,7 @@ try:
             unsafe_allow_html=True
         )
 
-    with col7:
+    with col7: # PUNTOS BLOQUEADOS
         # Gauge para Puntos Bloqueados
         puntos_bloqueados_total = df[df["Indicador"] == "Puntos con malas prácticas (%)"]["Total"].values[0]
         puntos_bloqueados_valor_total = float(str(puntos_bloqueados_total).replace('%', ''))
@@ -452,7 +474,7 @@ try:
         )
         st.plotly_chart(fig, use_container_width=True)
 
-    with col9:
+    with col9: # APERTURAS
         datos_pie = pd.DataFrame({
             'Alianza': ['VALE+', 'REVAL'],
             'Aperturas': [aperturas_vale, aperturas_reval]
@@ -541,7 +563,7 @@ try:
         st.plotly_chart(fig, use_container_width=True)
 
     st.markdown("---")
-    st.subheader("Distribución Geográfica de Corresponsales")
+    st.subheader(" 📍Distribución Geográfica de Corresponsales")
 
     # Función para limpiar dataframes
     def limpiar_dataframe(df):
@@ -649,10 +671,13 @@ try:
                 )
             
             fig.update_layout(
-                mapbox_style="carto-positron",
+                # mapbox_style="carto-positron",
+                mapbox_style="open-street-map",
                 mapbox=dict(
                     center=dict(lat=4.5709, lon=-74.2973),
-                )
+                ),
+                modebar_remove=["zoomIn", "zoomOut"],  # Mantener solo los controles necesarios
+                dragmode='pan'  # Permitir arrastrar el mapa
             )
             
             fig.update_traces(
@@ -715,7 +740,9 @@ try:
                 mapbox_style="carto-positron",
                 mapbox=dict(
                     center=dict(lat=4.5709, lon=-74.2973),
-                )
+                ),
+                modebar_remove=["zoomIn", "zoomOut"],  # Mantener solo los controles necesarios
+                dragmode='pan'  # Permitir arrastrar el mapa
             )
 
             # Ocultar la información del hover
@@ -754,7 +781,7 @@ try:
             else:
                 mapa = crear_mapa_densidad(df_base_cierres, 'Densidad de Cierres')
 
-        st.plotly_chart(mapa, use_container_width=True)
+        st.plotly_chart(mapa, use_container_width=True, config={'scrollZoom': True})
 
         with col_stats:
             # Actualizar estadísticas para incluir vista combinada

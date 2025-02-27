@@ -315,30 +315,29 @@ try:
                 size=24
             ),
             width=0.8,
-            name='Valor Actual'
+            name=f'Valor Actual: {valor_mostrar:.1f}%'
         ))
         
-        # # Agregar línea de meta con estilo más visible
-        # fig.add_trace(go.Scatter(
-        #     x=[meta_mala_practica, meta_mala_practica],
-        #     y=['Mala Práctica', 'Mala Práctica'],
-        #     mode='lines',
-        #     line=dict(
-        #         width=6,  # Grosor aumentado para visibilidad
-        #         dash='dash',  # Patrón de línea más visible
-        #         color='red'  # Color rojo fijo
-        #     ),
-        #     name='Meta'
-        # ))
-
         fig.add_shape(
             type='line',
             x0=meta_mala_practica, x1=meta_mala_practica,  # Línea vertical en la posición de la meta
             y0=-0.5, y1=0.5,  # Extensión en el eje Y
-            line=dict(color='red', width=4, dash='dash'),
-            name='Meta'
+            line=dict(color='red', width=4, dash='dash')
         )
 
+        # Añadir anotación para el valor de la meta
+        fig.add_annotation(
+            x=max(valor_mostrar, meta_mala_practica) * 1.1,
+            y=0,
+            text=f'Meta: {meta_mala_practica}%',
+            showarrow=False,
+            font=dict(
+                size=16,
+                color='red'
+            ),
+            xanchor='left',
+            yanchor='middle'
+        )
 
         # Actualizar el layout
         fig.update_layout(
@@ -351,7 +350,7 @@ try:
                 'font': {'size': 28}
             },
             height=300,
-            margin=dict(t=50, b=30, l=20, r=100),
+            margin=dict(t=50, b=30, l=20, r=150),
             xaxis=dict(
                 title=dict(
                     text='Porcentaje (%)',
@@ -368,21 +367,16 @@ try:
                 showgrid=False,
                 range=[-0.5, 0.5]
             ),
-            showlegend=True,
+            showlegend=False,
+            legend=dict(
+                orientation="v",
+                yanchor="middle",
+                y=0.5,
+                xanchor="left",
+                x=1.02
+            ),
             plot_bgcolor=None,
             paper_bgcolor=None
-        )
-        
-        # Agregar anotación para la meta
-        fig.add_annotation(
-            x=meta_mala_practica,
-            y='mala_practica',
-            text=f'Meta: {meta_mala_practica}%',
-            showarrow=False,
-            arrowhead=2,
-            arrowcolor='red',
-            ax=40,
-            font=dict(size=18)
         )
         
         st.plotly_chart(fig, use_container_width=True)

@@ -20,6 +20,7 @@ st.set_page_config(
     page_title="Tablero Indicadores CB",
     layout="wide",
     initial_sidebar_state="collapsed",
+    
     menu_items={
         "Get Help": None,
         "Report a bug": None,
@@ -225,7 +226,12 @@ try:
             value=valor_mostrar,
             number={"valueformat": ",", "font": {"size": 80}},
             delta=delta_config,
-            title={"text": titulo},
+            title={
+                "text": titulo,
+                "font": {
+                    "size": 24
+                }
+            },
             domain={"x": [0, 1], "y": [0, 1]}
         ))
 
@@ -255,8 +261,7 @@ try:
             title={
                 'text': titulo,
                 'font': {
-                    'size': 24,
-                    'weight': 'bold'
+                    'size': 24
                 }
             },
             number={'suffix': '%' if mostrar_porcentaje else '', 'font': {'size': 50}},
@@ -329,7 +334,7 @@ try:
                 'yanchor': 'top',
                 'font': {
                     'size': 24,
-                    'weight': 'bold'
+                    'weight': 'normal'
                 }
             },
             showlegend=True,
@@ -399,7 +404,10 @@ try:
                 'x': 0.5,
                 'xanchor': 'center',
                 'yanchor': 'top',
-                'font': {'size': 28}
+                'font': {
+                    'size': 20,  # Reducido de 28 a 20
+                    'weight': 'normal'
+                }
             },
             height=300,
             margin=dict(t=50, b=30, l=20, r=150),

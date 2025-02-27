@@ -147,10 +147,10 @@ try:
     Cantidad_de_puntos_vale = df[df["Indicador"] == "Cantidad de puntos"]["VALE+"].values[0]
     Cantidad_de_puntos_reval = df[df["Indicador"] == "Cantidad de puntos"]["REVAL"].values[0]
 
-    # puntos bloqueados
-    seccion_bloqueo_bloqueados_total = df[df["Indicador"] == "Puntos bloqueados - Inactivos"]["Total"].values[0]
-    seccion_bloqueo_bloqueados_vale = df[df["Indicador"] == "Puntos bloqueados - Inactivos"]["VALE+"].values[0]
-    seccion_bloqueo_bloqueados_reval = df[df["Indicador"] == "Puntos bloqueados - Inactivos"]["REVAL"].values[0]
+    # # puntos bloqueados
+    # seccion_bloqueo_bloqueados_total = df[df["Indicador"] == "Puntos bloqueados - Inactivos"]["Total"].values[0]
+    # seccion_bloqueo_bloqueados_vale = df[df["Indicador"] == "Puntos bloqueados - Inactivos"]["VALE+"].values[0]
+    # seccion_bloqueo_bloqueados_reval = df[df["Indicador"] == "Puntos bloqueados - Inactivos"]["REVAL"].values[0]
 
     # Productividad
     productividad_total = df[df["Indicador"] == "Productividad - Cumple meta (%)"]["Total"].values[0]
@@ -168,6 +168,10 @@ try:
     mala_practica_vale = df[df["Indicador"] == "Puntos con malas prácticas (%)"]["VALE+"].values[0]
     mala_practica_reval = df[df["Indicador"] == "Puntos con malas prácticas (%)"]["REVAL"].values[0]
 
+    bloqueos_total = df[df["Indicador"] == "Bloqueos"]["Total"].values[0]
+    bloqueos_vale = df[df["Indicador"] == "Bloqueos"]["VALE+"].values[0]
+    bloqueos_reval = df[df["Indicador"] == "Bloqueos"]["REVAL"].values[0]
+
     # 📌 Indicador tasa de activacion
     tasa_activacion_total = df[df["Indicador"] == "Puntos bloqueados - Activos (%)"]["Total"].values[0]
     tasa_activacion_vale = df[df["Indicador"] == "Puntos bloqueados - Activos (%)"]["VALE+"].values[0]
@@ -184,129 +188,176 @@ try:
     cierres_reval = df[df["Indicador"] == "Cierres del mes"]["REVAL"].values[0]
 
     #metas
+    meta_nps = 79.32
+    meta_icx = 4.77
+    meta_bloqueos_no_compensacion = 2.0
     meta_mala_practica = 2.95
+    meta_productividad = 53
+    meta_tamaño_red = 17081
+    meta_seguros = 2300 
+    meta_tasa_activacion = 70
 
-    # 📌 Crear columnas para distribuir contenido (primera fila)
-    st.markdown("---")
+    def crear_indicador_numerico(valor_mostrar, meta, titulo, mostrar_delta=True):
+        """
+        Crea un indicador numérico con Plotly
+        
+        Args:
+            valor_mostrar: Valor actual a mostrar
+            meta: Valor objetivo o meta
+            titulo: Título del indicador
+            mostrar_delta: Si se debe mostrar la variación porcentual (True/False)
+        """
+        if mostrar_delta:
+            delta_config = {
+                "reference": meta,
+                # "relative": True,
+                "valueformat": ".1f%%",
+                "increasing": {"color": "green"},
+                "decreasing": {"color": "red"}
+            }
+            mode = "number+delta"
+        else:
+            delta_config = None
+            mode = "number"
 
-    # Primera fila - Valor único centrado
-    valor_mostrar = {
-    "VALE+": Cantidad_de_puntos_vale,
-    "REVAL": Cantidad_de_puntos_reval,
-    "Total": Cantidad_de_puntos_total
-    }[opcion_seleccionada]
-    
-    st.markdown(
-        f"""
-        <div style="text-align: center">
-            <p style="font-size:25px; margin-bottom:0px; font-weight:bold;">Tamaño de Red {opcion_seleccionada}</p>
-            <p style="font-size:100px; font-weight:bold; margin-top:0px;">{valor_mostrar:,}</p>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-    st.markdown("---")
-
-    # Segunda fila - 3 columnas
-    col2, col3, col4 = st.columns([1, 1, 1])
-
-    with col2:
-        # Gauge para NPS
         fig = go.Figure(go.Indicator(
-            mode = "gauge+number",
-            value = nps_total,
-            title = {
-                'text': "NPS",
+            mode=mode,
+            value=valor_mostrar,
+            number={"valueformat": ",", "font": {"size": 80}},
+            delta=delta_config,
+            title={"text": titulo},
+            domain={"x": [0, 1], "y": [0, 1]}
+        ))
+
+        fig.add_annotation(
+            text=f"Meta: {meta:,}",
+            x=0.5, y=0.1,
+            showarrow=False,
+            font=dict(size=22, color="gray")
+        )
+        
+        return fig
+
+    def crear_gauge(valor, titulo, meta, rango_max, mostrar_porcentaje=True):
+        """
+        Crea un gráfico tipo gauge con Plotly
+        
+        Args:
+            valor: Valor actual a mostrar
+            titulo: Título del gauge
+            meta: Valor objetivo o meta
+            rango_max: Valor máximo del rango
+            mostrar_porcentaje: Si se debe mostrar el símbolo de porcentaje
+        """
+        fig = go.Figure(go.Indicator(
+            mode="gauge+number",
+            value=valor,
+            title={
+                'text': titulo,
                 'font': {
                     'size': 24,
                     'weight': 'bold'
                 }
             },
-            number = {'suffix': '%', 'font': {'size': 50}},  # Aumentando tamaño del número
-            gauge = {
-                'axis': {'range': [-100, 100]},
+            number={'suffix': '%' if mostrar_porcentaje else '', 'font': {'size': 50}},
+            gauge={
+                'axis': {'range': [0, rango_max]},
                 'bar': {'color': "#99D1FC", 'thickness': 0.90},
                 'bgcolor': "white",
                 'borderwidth': 2,
                 'bordercolor': "gray",
                 'steps': [
-                    {'range': [-100, 0], 'color': "#FF4B4B"},
-                    {'range': [0, 50], 'color': "#FAFAFA"},
-                    {'range': [50, 100], 'color': "#B0F2AE"}
+                    {'range': [0, meta], 'color': "#FF4B4B"},
+                    {'range': [meta, rango_max], 'color': "#B0F2AE"}
                 ],
                 'threshold': {
                     'line': {'color': "red", 'width': 4},
                     'thickness': 0.75,
-                    'value': 50
+                    'value': meta
                 }
             }
         ))
+        
         fig.update_layout(
-        height=300,  # Aumentando un poco la altura
-        margin=dict(t=50, b=30, l=20, r=20)  # Aumentando el margen superior
+            height=300,
+            margin=dict(t=50, b=30, l=20, r=20)
         )
-        st.plotly_chart(fig, use_container_width=True)
+        
+        return fig
 
-    with col3:
-        # Gauge para ICX
-        fig = go.Figure(go.Indicator(
-            mode = "gauge+number",
-            value = float(icx_total),
-            title = {
-                'text': "ICX",
+    def crear_grafico_pie(valores_vale, valores_reval, titulo, nombre_valor):
+        """
+        Crea un gráfico de tipo pie con Plotly Express
+        
+        Args:
+            valores_vale: Valor para VALE+
+            valores_reval: Valor para REVAL
+            titulo: Título del gráfico
+            nombre_valor: Nombre de la columna de valores (ej: 'Aperturas', 'Cierres')
+        """
+        datos_pie = pd.DataFrame({
+            'Alianza': ['VALE+', 'REVAL'],
+            nombre_valor: [valores_vale, valores_reval]
+        })
+        
+        fig = px.pie(
+            datos_pie,
+            values=nombre_valor,
+            names='Alianza',
+            title=titulo,
+            color='Alianza',
+            color_discrete_map={
+                "VALE+": "#00825A",
+                "REVAL": "#B0F2AE"
+            },
+            height=300
+        )
+        
+        fig.update_traces(
+            textposition='inside',
+            textinfo='value+percent',
+            textfont_size=14,
+            hole=0.4,
+        )
+        
+        fig.update_layout(
+            title={
+                'text': titulo,
+                'x': 0.5,
+                'y': 0.95,
+                'xanchor': 'center',
+                'yanchor': 'top',
                 'font': {
                     'size': 24,
                     'weight': 'bold'
                 }
             },
-            number = {'font': {'size': 50}},  # Aumentando tamaño del número
-            gauge = {
-                'axis': {'range': [0, 5]},
-                'bar': {'color': "#99D1FC", 'thickness': 0.90},
-                'bgcolor': "white",
-                'borderwidth': 2,
-                'bordercolor': "gray",
-                'steps': [
-                    {'range': [0, 2.5], 'color': "#FF4B4B"},
-                    {'range': [2.5, 4], 'color': "#FAFAFA"},
-                    {'range': [4, 5], 'color': "#B0F2AE"}
-                ],
-                'threshold': {
-                    'line': {'color': "red", 'width': 4},
-                    'thickness': 0.75,
-                    'value': 4
-                }
-            }
-        ))
-        fig.update_layout(
-            height=300,  # Aumentando un poco la altura
-            margin=dict(t=50, b=30, l=20, r=20)  # Aumentando el margen superior
+            showlegend=True,
+            legend=dict(orientation="h", yanchor="bottom", y=-0.2, xanchor="center", x=0.5),
+            margin=dict(t=50, b=50, l=20, r=20)
         )
-        st.plotly_chart(fig, use_container_width=True)
-
-
-    with col4:
-        # Crear gráfico de bullet chart para Mala Práctica
-
         
-        # Seleccionar el valor según la opción
-        valor_mostrar = {
-            "VALE+": float(str(mala_practica_vale).replace('%', '')),
-            "REVAL": float(str(mala_practica_reval).replace('%', '')),
-            "Total": float(str(mala_practica_total).replace('%', ''))
-        }[opcion_seleccionada]
+        return fig
+
+    def crear_bullet_chart(valor_mostrar, meta, titulo, nombre_indicador):
+        """
+        Crea un gráfico de tipo bullet chart con Plotly
         
-        # Crear el gráfico
+        Args:
+            valor_mostrar: Valor actual a mostrar
+            meta: Valor objetivo o meta
+            titulo: Título del gráfico
+            nombre_indicador: Nombre del indicador para mostrar en el eje Y
+        """
         fig = go.Figure()
         
         # Agregar la barra principal
         fig.add_trace(go.Bar(
             x=[valor_mostrar],
-            y=['Mala Práctica'],
+            y=[nombre_indicador],
             orientation='h',
             marker=dict(
-                color='#FF4B4B' if valor_mostrar > meta_mala_practica else '#B0F2AE',
+                color='#FF4B4B' if valor_mostrar > meta else '#B0F2AE',
                 line=dict(color='black', width=2)
             ),
             text=f'{valor_mostrar:.1f}%',
@@ -318,18 +369,19 @@ try:
             name=f'Valor Actual: {valor_mostrar:.1f}%'
         ))
         
+        # Agregar línea vertical de meta
         fig.add_shape(
             type='line',
-            x0=meta_mala_practica, x1=meta_mala_practica,  # Línea vertical en la posición de la meta
-            y0=-0.5, y1=0.5,  # Extensión en el eje Y
+            x0=meta, x1=meta,
+            y0=-0.5, y1=0.5,
             line=dict(color='red', width=4, dash='dash')
         )
 
         # Añadir anotación para el valor de la meta
         fig.add_annotation(
-            x=max(valor_mostrar, meta_mala_practica) * 1.1,
+            x=max(valor_mostrar, meta) * 1.1,
             y=0,
-            text=f'Meta: {meta_mala_practica}%',
+            text=f'Meta: {meta}%',
             showarrow=False,
             font=dict(
                 size=16,
@@ -342,7 +394,7 @@ try:
         # Actualizar el layout
         fig.update_layout(
             title={
-                'text': f'Mala Práctica - {opcion_seleccionada}',
+                'text': titulo,
                 'y': 0.95,
                 'x': 0.5,
                 'xanchor': 'center',
@@ -356,7 +408,7 @@ try:
                     text='Porcentaje (%)',
                     font=dict(size=16)
                 ),
-                range=[0, max(valor_mostrar, meta_mala_practica) * 1.1],
+                range=[0, max(valor_mostrar, meta) * 1.1],
                 showgrid=True,
                 gridcolor='rgba(128, 128, 128, 0.2)',
                 tickfont=dict(size=14),
@@ -379,7 +431,82 @@ try:
             paper_bgcolor=None
         )
         
+        return fig
+
+    # 📌 Crear columnas para distribuir contenido (primera fila)
+    st.markdown("---")
+
+    # Primera fila - Valor único centrado
+    valor_mostrar = {
+        "VALE+": Cantidad_de_puntos_vale,
+        "REVAL": Cantidad_de_puntos_reval,
+        "Total": Cantidad_de_puntos_total
+    }[opcion_seleccionada]
+    
+    # Alerta si el tamaño de la red es menor a la meta "Total"
+    if opcion_seleccionada == "Total":
+        if valor_mostrar < meta_tamaño_red:
+            st.error(f"⚠️ ¡Atención! El tamaño de red **{valor_mostrar:,}** está **por debajo** de la meta de **{meta_tamaño_red:,}**.")
+
+
+    # Crear y mostrar el indicador de tamaño de red
+    fig = crear_indicador_numerico(
+        valor_mostrar=valor_mostrar,
+        meta=meta_tamaño_red,
+        titulo=f"Tamaño de Red {opcion_seleccionada}",
+        mostrar_delta=(opcion_seleccionada == "Total")
+    )
+
+    # Mostrar en Streamlit
+    st.plotly_chart(fig, use_container_width=True)
+    st.markdown("---")
+
+    # Segunda fila - 3 columnas
+    col2, col3, col4 = st.columns([1, 1, 1])
+
+    with col2:
+        # Gauge para NPS
+        fig = crear_gauge(
+            valor=nps_total,
+            titulo="NPS",
+            meta=meta_nps,
+            rango_max=100
+        )
         st.plotly_chart(fig, use_container_width=True)
+
+    with col3:
+        # Gauge para ICX
+        fig = crear_gauge(
+            valor=float(icx_total),
+            titulo="ICX",
+            meta=meta_icx,
+            rango_max=5,
+            mostrar_porcentaje=False
+        )
+        
+        st.plotly_chart(fig, use_container_width=True)
+
+
+    with col4:
+        # Crear gráfico de bullet chart para bloqueos por no compensacion    
+        valor_mostrar = {
+            "VALE+": float(str(bloqueos_vale).replace('%', '')),
+            "REVAL": float(str(bloqueos_reval).replace('%', '')),
+            "Total": float(str(bloqueos_total).replace('%', ''))
+        }[opcion_seleccionada]
+        
+        fig = crear_bullet_chart(
+            valor_mostrar=valor_mostrar,
+            meta=meta_bloqueos_no_compensacion,
+            titulo='Bloqueos por no compensacion',
+            nombre_indicador='Bloqueos por no compensacion'
+        )
+        
+        st.plotly_chart(fig, use_container_width=True, config={
+            'displayModeBar': False,  # Oculta la barra de herramientas
+            'scrollZoom': False,      # Deshabilita el zoom con scroll
+            'doubleClick': False      # Deshabilita el zoom con doble click
+        })
 
     st.markdown("---")
 
@@ -391,38 +518,11 @@ try:
         productividad_df = df[df["Indicador"] == "Productividad - Cumple meta (%)"]["Total"].values[0]
         productividad_total = float(str(productividad_df).replace('%', ''))
 
-        fig = go.Figure(go.Indicator(
-            mode = "gauge+number",
-            value = productividad_total,
-            title = {
-                'text': "Productividad",
-                'font': {
-                    'size': 24,
-                    'weight': 'bold'
-                }
-            },
-            number = {'suffix': '%', 'font': {'size': 50}},  # Tamaño número aumentado
-            gauge = {
-                'axis': {'range': [0, 100]},
-                'bar': {'color': "#99D1FC", 'thickness': 0.90},
-                'bgcolor': "white",
-                'borderwidth': 2,
-                'bordercolor': "gray",
-                'steps': [
-                    {'range': [0, 40], 'color': "#FF4B4B"},
-                    {'range': [40, 70], 'color': "#FAFAFA"},
-                    {'range': [70, 100], 'color': "#B0F2AE"}
-                ],
-                'threshold': {
-                    'line': {'color': "red", 'width': 4},
-                    'thickness': 0.75,
-                    'value': 70
-                }
-            }
-        ))
-        fig.update_layout(
-            height=300,  # Altura aumentada
-            margin=dict(t=50, b=30, l=20, r=20)  # Margen superior aumentado
+        fig = crear_gauge(
+            valor=productividad_total,
+            titulo="Productividad",
+            meta=meta_productividad,
+            rango_max=100
         )
         st.plotly_chart(fig, use_container_width=True)
         
@@ -433,56 +533,37 @@ try:
             "REVAL": seguros_reval,
             "Total": seguros_total
         }[opcion_seleccionada]
-        
-        st.markdown(
-            f"""
-            <div style="text-align: center">
-                <p style="font-size:25px; margin-bottom:20px; font-weight:bold;">Seguros {opcion_seleccionada}</p>
-                <p style="font-size:100px; font-weight:bold; margin-top:20px;">{valor_activos:,}</p>
-            </div>
-            """,
-            unsafe_allow_html=True
-        )
 
-    with col7: # PUNTOS BLOQUEADOS
-        # Gauge para Puntos Bloqueados
-        puntos_bloqueados_total = df[df["Indicador"] == "Puntos con malas prácticas (%)"]["Total"].values[0]
-        puntos_bloqueados_valor_total = float(str(puntos_bloqueados_total).replace('%', ''))
-        
-        fig = go.Figure(go.Indicator(
-            mode = "gauge+number",
-            value = puntos_bloqueados_valor_total,
-            title = {
-                'text': "Puntos Bloqueados",
-                'font': {
-                    'size': 24,
-                    'weight': 'bold'
-                }
-            },
-            number = {'suffix': '%', 'font': {'size': 50}},
-            gauge = {
-                'axis': {'range': [0, 100]},
-                'bar': {'color': "#99D1FC", 'thickness': 0.90},
-                'bgcolor': "white",
-                'borderwidth': 2,
-                'bordercolor': "gray",
-                'steps': [
-                    {'range': [0, 40], 'color': "#B0F2AE"},
-                    {'range': [40, 70], 'color': "#FAFAFA"},
-                    {'range': [70, 100], 'color': "#FF4B4B"}
-                ],
-                'threshold': {
-                    'line': {'color': "red", 'width': 4},
-                    'thickness': 0.75,
-                    'value': 70
-                }
-            }
-        ))
-        fig.update_layout(
-            height=300,
-            margin=dict(t=50, b=30, l=20, r=20)
+        # Crear y mostrar el indicador de seguros
+        fig = crear_indicador_numerico(
+            valor_mostrar=valor_activos,
+            meta=meta_seguros,
+            titulo=f"Seguros {opcion_seleccionada}",
+            mostrar_delta=(opcion_seleccionada == "Total")
         )
+        # 📌 Mostrar en Streamlit
         st.plotly_chart(fig, use_container_width=True)
+
+    with col7: # MALA PRACTICA
+        valor_mostrar = {
+            "VALE+": float(str(mala_practica_vale).replace('%', '')),
+            "REVAL": float(str(mala_practica_reval).replace('%', '')),
+            "Total": float(str(mala_practica_total).replace('%', ''))
+        }[opcion_seleccionada]
+        
+        fig = crear_bullet_chart(
+            valor_mostrar=valor_mostrar,
+            meta=meta_mala_practica,
+            titulo=f'Mala Práctica - {opcion_seleccionada}',
+            nombre_indicador='Mala Práctica'
+        )
+        
+        st.plotly_chart(fig, use_container_width=True, config={
+            'displayModeBar': False,  # Oculta la barra de herramientas
+            'scrollZoom': False,      # Deshabilita el zoom con scroll
+            'doubleClick': False      # Deshabilita el zoom con doble click
+        })
+
 
     st.markdown("---")
 
@@ -494,126 +575,29 @@ try:
         puntos_bloqueados_df = df[df["Indicador"] == "Puntos bloqueados - Activos (%)"]["Total"].values[0]
         puntos_bloqueados_valor = float(str(puntos_bloqueados_df).replace('%', ''))
         
-        fig = go.Figure(go.Indicator(
-            mode = "gauge+number",
-            value = puntos_bloqueados_valor,
-            title = {
-                'text': "Índice de Activación",
-                'font': {
-                    'size': 24,
-                    'weight': 'bold'
-                }
-            },
-            number = {'suffix': '%', 'font': {'size': 50}},
-            gauge = {
-                'axis': {'range': [0, 100]},
-                'bar': {'color': "#99D1FC", 'thickness': 0.90},
-                'bgcolor': "white",
-                'borderwidth': 2,
-                'bordercolor': "gray",
-                'steps': [
-                    {'range': [0, 40], 'color': "#FF4B4B"},
-                    {'range': [40, 70], 'color': "#FAFAFA"},
-                    {'range': [70, 100], 'color': "#B0F2AE"} # rojo claro
-                ],
-                'threshold': {
-                    'line': {'color': "red", 'width': 4},
-                    'thickness': 0.75,
-                    'value': 70
-                }
-            }
-        ))
-        fig.update_layout(
-            height=300,
-            margin=dict(t=50, b=30, l=20, r=20)
+        fig = crear_gauge(
+            valor=puntos_bloqueados_valor,
+            titulo="Puntos bloqueados - Activos",
+            meta=meta_tasa_activacion,  #revisar tasa de activacion
+            rango_max=100
         )
         st.plotly_chart(fig, use_container_width=True)
 
     with col9: # APERTURAS
-        datos_pie = pd.DataFrame({
-            'Alianza': ['VALE+', 'REVAL'],
-            'Aperturas': [aperturas_vale, aperturas_reval]
-        })
-        
-        fig = px.pie(
-            datos_pie,
-            values='Aperturas',
-            names='Alianza',
-            title='Aperturas',
-            color='Alianza',
-            color_discrete_map={
-                "VALE+": "#00825A",
-                "REVAL": "#B0F2AE"
-            },
-            height=300
-        )
-        
-        fig.update_traces(
-            textposition='inside',
-            textinfo='value+percent',
-            textfont_size=14,
-            hole=0.4,
-        )
-        
-        fig.update_layout(
-            title={
-                'text': 'Aperturas',
-                'x': 0.5,
-                'y': 0.95,
-                'xanchor': 'center',
-                'yanchor': 'top',
-                'font': {
-                    'size': 24,
-                    'weight': 'bold'
-                }
-            },
-            showlegend=True,
-            legend=dict(orientation="h", yanchor="bottom", y=-0.2, xanchor="center", x=0.5),
-            margin=dict(t=50, b=50, l=20, r=20)
+        fig = crear_grafico_pie(
+            valores_vale=aperturas_vale,
+            valores_reval=aperturas_reval,
+            titulo='Aperturas',
+            nombre_valor='Aperturas'
         )
         st.plotly_chart(fig, use_container_width=True)
 
-    with col10:
-        datos_pie = pd.DataFrame({
-            'Alianza': ['VALE+', 'REVAL'],
-            'Cierres': [cierres_vale, cierres_reval]
-        })
-        
-        fig = px.pie(
-            datos_pie,
-            values='Cierres',
-            names='Alianza',
-            title='Cierres',
-            color='Alianza',
-            color_discrete_map={
-                "VALE+": "#00825A",
-                "REVAL": "#B0F2AE"
-            },
-            height=300
-        )
-        
-        fig.update_traces(
-            textposition='inside',
-            textinfo='value+percent',
-            textfont_size=14,
-            hole=0.4,
-        )
-        
-        fig.update_layout(
-            title={
-                'text': 'Cierres',
-                'x': 0.5,
-                'y': 0.95,
-                'xanchor': 'center',
-                'yanchor': 'top',
-                'font': {
-                    'size': 24,
-                    'weight': 'bold'
-                }
-            },
-            showlegend=True,
-            legend=dict(orientation="h", yanchor="bottom", y=-0.2, xanchor="center", x=0.5),
-            margin=dict(t=50, b=50, l=20, r=20)
+    with col10: # CIERRES
+        fig = crear_grafico_pie(
+            valores_vale=cierres_vale,
+            valores_reval=cierres_reval,
+            titulo='Cierres',
+            nombre_valor='Cierres'
         )
         st.plotly_chart(fig, use_container_width=True)
 

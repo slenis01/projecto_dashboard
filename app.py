@@ -183,6 +183,8 @@ try:
     cierres_vale = df[df["Indicador"] == "Cierres del mes"]["VALE+"].values[0]
     cierres_reval = df[df["Indicador"] == "Cierres del mes"]["REVAL"].values[0]
 
+    #metas
+    meta_mala_practica = 2.95
 
     # 📌 Crear columnas para distribuir contenido (primera fila)
     st.markdown("---")
@@ -285,45 +287,104 @@ try:
 
 
     with col4:
-        # Tercer gauge
-        valor_mala_practica = float({
-            "VALE+": str(mala_practica_vale).replace('%', ''),
-            "REVAL": str(mala_practica_reval).replace('%', ''),
-            "Total": str(mala_practica_total).replace('%', '')
-        }[opcion_seleccionada])
+        # Crear gráfico de bullet chart para Mala Práctica
 
-        fig = go.Figure(go.Indicator(
-            mode = "gauge+number",
-            value = valor_mala_practica,
-            title = {
-                'text': f"Mala Práctica {opcion_seleccionada}",
-                'font': {
-                    'size': 24,
-                    'weight': 'bold'
-                }
-            },
-            number = {'suffix': '%', 'font': {'size': 50}},  # Aumentando tamaño del número
-            gauge = {
-                'axis': {'range': [0, 100]},
-                'bar': {'color': "#99D1FC", 'thickness': 0.90},
-                'bgcolor': "white",
-                'borderwidth': 2,
-                'bordercolor': "gray",
-                'steps': [
-                    {'range': [0, 50], 'color': "#FAFAFA"},
-                    {'range': [50, 100], 'color': "#B0F2AE"}
-                ],
-                'threshold': {
-                    'line': {'color': "red", 'width': 4},
-                    'thickness': 0.75,
-                    'value': 50
-                }
-            }
+        
+        # Seleccionar el valor según la opción
+        valor_mostrar = {
+            "VALE+": float(str(mala_practica_vale).replace('%', '')),
+            "REVAL": float(str(mala_practica_reval).replace('%', '')),
+            "Total": float(str(mala_practica_total).replace('%', ''))
+        }[opcion_seleccionada]
+        
+        # Crear el gráfico
+        fig = go.Figure()
+        
+        # Agregar la barra principal
+        fig.add_trace(go.Bar(
+            x=[valor_mostrar],
+            y=['Mala Práctica'],
+            orientation='h',
+            marker=dict(
+                color='#FF4B4B' if valor_mostrar > meta_mala_practica else '#B0F2AE',
+                line=dict(color='black', width=2)
+            ),
+            text=f'{valor_mostrar:.1f}%',
+            textposition='outside',
+            textfont=dict(
+                size=24
+            ),
+            width=0.8,
+            name='Valor Actual'
         ))
-        fig.update_layout(
-            height=300,  # Aumentando un poco la altura
-            margin=dict(t=50, b=30, l=20, r=20)  # Aumentando el margen superior
+        
+        # # Agregar línea de meta con estilo más visible
+        # fig.add_trace(go.Scatter(
+        #     x=[meta_mala_practica, meta_mala_practica],
+        #     y=['Mala Práctica', 'Mala Práctica'],
+        #     mode='lines',
+        #     line=dict(
+        #         width=6,  # Grosor aumentado para visibilidad
+        #         dash='dash',  # Patrón de línea más visible
+        #         color='red'  # Color rojo fijo
+        #     ),
+        #     name='Meta'
+        # ))
+
+        fig.add_shape(
+            type='line',
+            x0=meta_mala_practica, x1=meta_mala_practica,  # Línea vertical en la posición de la meta
+            y0=-0.5, y1=0.5,  # Extensión en el eje Y
+            line=dict(color='red', width=4, dash='dash'),
+            name='Meta'
         )
+
+
+        # Actualizar el layout
+        fig.update_layout(
+            title={
+                'text': f'Mala Práctica - {opcion_seleccionada}',
+                'y': 0.95,
+                'x': 0.5,
+                'xanchor': 'center',
+                'yanchor': 'top',
+                'font': {'size': 28}
+            },
+            height=300,
+            margin=dict(t=50, b=30, l=20, r=100),
+            xaxis=dict(
+                title=dict(
+                    text='Porcentaje (%)',
+                    font=dict(size=16)
+                ),
+                range=[0, max(valor_mostrar, meta_mala_practica) * 1.1],
+                showgrid=True,
+                gridcolor='rgba(128, 128, 128, 0.2)',
+                tickfont=dict(size=14),
+                showticklabels=True
+            ),
+            yaxis=dict(
+                showticklabels=False,
+                showgrid=False,
+                range=[-0.5, 0.5]
+            ),
+            showlegend=True,
+            plot_bgcolor=None,
+            paper_bgcolor=None
+        )
+        
+        # Agregar anotación para la meta
+        fig.add_annotation(
+            x=meta_mala_practica,
+            y='mala_practica',
+            text=f'Meta: {meta_mala_practica}%',
+            showarrow=False,
+            arrowhead=2,
+            arrowcolor='red',
+            ax=40,
+            font=dict(size=18)
+        )
+        
         st.plotly_chart(fig, use_container_width=True)
 
     st.markdown("---")

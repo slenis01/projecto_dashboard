@@ -409,6 +409,7 @@ try:
                     'weight': 'normal'
                 }
             },
+            dragmode=False,  # 🔹 Evita zoom en el Bullet Chart
             height=300,
             margin=dict(t=50, b=30, l=20, r=150),
             xaxis=dict(

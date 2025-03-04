@@ -1,0 +1,21 @@
+# Virtual Environment
+venv/
+
+# Configuration files
+config.yaml
+
+# Python scripts
+generar_passwords.py
+
+# Python cache files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Environment variables
+.env
+
+# IDE files
+.vscode/
+.idea/

@@ -16,43 +16,49 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+
+
+
 # 📌 Función para obtener la configuración
 def get_config():
-    try:
-        # Intentar usar secrets de Streamlit (para la nube)
-        config = {
-            "credentials": {
-                "usernames": {
-                    # Usuario 1
-                    st.secrets["auth"]["users"]["slenis"]["username"]: {
-                        "email": st.secrets["auth"]["users"]["slenis"]["email"],
-                        "name": st.secrets["auth"]["users"]["slenis"]["name"],
-                        "password": st.secrets["auth"]["users"]["slenis"]["password"]
-                    },
-                    # Usuario 2
-                    st.secrets["auth"]["users"]["wileon"]["username"]: {
-                        "email": st.secrets["auth"]["users"]["wileon"]["email"],
-                        "name": st.secrets["auth"]["users"]["wileon"]["name"],
-                        "password": st.secrets["auth"]["users"]["wileon"]["password"]
-                    },
-                    # Usuario 3
-                    st.secrets["auth"]["users"]["yalibele"]["username"]: {
-                        "email": st.secrets["auth"]["users"]["yalibele"]["email"],
-                        "name": st.secrets["auth"]["users"]["yalibele"]["name"],
-                        "password": st.secrets["auth"]["users"]["yalibele"]["password"]
-                    }
+    # try:
+    # Intentar usar secrets de Streamlit (para la nube)
+    config = {
+        "credentials": {
+            "usernames": {
+                # Usuario 1
+                st.secrets["auth"]["users"]["slenis"]["username"]: {
+                    "email": st.secrets["auth"]["users"]["slenis"]["email"],
+                    "name": st.secrets["auth"]["users"]["slenis"]["name"],
+                    "password": st.secrets["auth"]["users"]["slenis"]["password"],
+                    "role": st.secrets["auth"]["users"]["slenis"]["role"]
+                },
+                # Usuario 2
+                st.secrets["auth"]["users"]["wileon"]["username"]: {
+                    "email": st.secrets["auth"]["users"]["wileon"]["email"],
+                    "name": st.secrets["auth"]["users"]["wileon"]["name"],
+                    "password": st.secrets["auth"]["users"]["wileon"]["password"],
+                    "role": st.secrets["auth"]["users"]["wileon"]["role"]
+                },
+                # Usuario 3
+                st.secrets["auth"]["users"]["yalibele"]["username"]: {
+                    "email": st.secrets["auth"]["users"]["yalibele"]["email"],
+                    "name": st.secrets["auth"]["users"]["yalibele"]["name"],
+                    "password": st.secrets["auth"]["users"]["yalibele"]["password"],
+                    "role": st.secrets["auth"]["users"]["yalibele"]["role"]
                 }
-            },
-            "cookie": {
-                "expiry_days": st.secrets["cookie"]["expiry_days"],
-                "key": st.secrets["cookie"]["key"],
-                "name": st.secrets["cookie"]["name"]
             }
+        },
+        "cookie": {
+            "expiry_days": st.secrets["cookie"]["expiry_days"],
+            "key": st.secrets["cookie"]["key"],
+            "name": st.secrets["cookie"]["name"]
         }
-    except:
-        # Si falla, usar config.yaml local
-        with open('config.yaml') as file:
-            config = yaml.load(file, Loader=SafeLoader)
+    }
+    # except:
+    #     # Si falla, usar config.yaml local
+    #     with open('config.yaml') as file:
+    #         config = yaml.load(file, Loader=SafeLoader)
     
     return config
 
@@ -67,8 +73,11 @@ authenticator = stauth.Authenticate(
     config["cookie"]["expiry_days"]
 )
 
-with open('config.yaml', 'w') as file:
-    yaml.dump(config, file, default_flow_style=False, allow_unicode=True)
+# with open('config.yaml', 'w') as file:
+#     yaml.dump(config, file, default_flow_style=False, allow_unicode=True)
+
+
+
 
 
 try:
@@ -76,9 +85,41 @@ try:
 except Exception as e:
     st.error(e)
 
+
 if st.session_state.get('authentication_status'):
-    authenticator.logout()
+    #authenticator.logout()
     st.write(f'Bienvenido *{st.session_state.get("name")}*')
+
+    if st.button("🚪 Cerrar sesión"):
+        authenticator.logout()
+        st.session_state["authentication_status"] = None  # 🔹 Restablecer el estado de sesión
+        st.session_state["username"] = None
+        st.rerun()  
+
+
+
+
+    # Obtener el rol del usuario actual
+    username = st.session_state.get("username")
+    user_role = config["credentials"]["usernames"][username]["role"]
+       
+    # Contenido basado en roles
+    if user_role == "admin":
+        st.title("Panel de Administración")
+        # ... resto del código para admin ...
+        
+    if user_role in ["admin", "editor"]:
+        st.header("Edición de Datos")
+
+    else:
+        st.title("Modo Visualización")
+
+    if user_role == "admin":
+        st.success("🔐 Modo Administrador Activo")  # Mensaje en verde
+    elif user_role == "editor":
+        st.info("✏️ Modo Editor Activo")  # Mensaje en azul
+    else:  # viewer
+        st.warning("👀 Modo Visualización Activo")  # Mensaje en amarillo
 
         # Función para convertir la fuente a base64
     def get_font_base64(font_path):
@@ -739,7 +780,7 @@ if st.session_state.get('authentication_status'):
 
                 if opcion_mapa == 'Todos':
                     # Para vista 'Todos', colorear por tipo
-                    fig = px.scatter_mapbox(
+                    fig = px.scatter_map(
                         df,
                         lat='Latitud',
                         lon='Longitud',
@@ -761,7 +802,7 @@ if st.session_state.get('authentication_status'):
                     )
                 else:
                     # Para vistas individuales, colorear por aliado
-                    fig = px.scatter_mapbox(
+                    fig = px.scatter_map(
                         df,
                         lat='Latitud',
                         lon='Longitud',
@@ -928,7 +969,7 @@ if st.session_state.get('authentication_status'):
 
 
 
-elif st.session_state.get('authentication_status') is False:
-    st.error('Usuario o Contraseña incorrectos')
+elif st.session_state.get('authentication_status') == False:
+    st.error("❌ Usuario o contraseña incorrectos")
 elif st.session_state.get('authentication_status') is None:
-    st.warning('Por favor ingrese su Usuario y Contraseña')
+    st.warning("🔑 Por favor inicia sesión")

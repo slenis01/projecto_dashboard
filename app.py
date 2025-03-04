@@ -16,10 +16,48 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# 📌 Función para obtener la configuración
+def get_config():
+    try:
+        # Intentar usar secrets de Streamlit (para la nube)
+        config = {
+            "credentials": {
+                "usernames": {
+                    # Usuario 1
+                    st.secrets["auth"]["users"]["slenis"]["username"]: {
+                        "email": st.secrets["auth"]["users"]["slenis"]["email"],
+                        "name": st.secrets["auth"]["users"]["slenis"]["name"],
+                        "password": st.secrets["auth"]["users"]["slenis"]["password"]
+                    },
+                    # Usuario 2
+                    st.secrets["auth"]["users"]["wileon"]["username"]: {
+                        "email": st.secrets["auth"]["users"]["wileon"]["email"],
+                        "name": st.secrets["auth"]["users"]["wileon"]["name"],
+                        "password": st.secrets["auth"]["users"]["wileon"]["password"]
+                    },
+                    # Usuario 3
+                    st.secrets["auth"]["users"]["yalibele"]["username"]: {
+                        "email": st.secrets["auth"]["users"]["yalibele"]["email"],
+                        "name": st.secrets["auth"]["users"]["yalibele"]["name"],
+                        "password": st.secrets["auth"]["users"]["yalibele"]["password"]
+                    }
+                }
+            },
+            "cookie": {
+                "expiry_days": st.secrets["cookie"]["expiry_days"],
+                "key": st.secrets["cookie"]["key"],
+                "name": st.secrets["cookie"]["name"]
+            }
+        }
+    except:
+        # Si falla, usar config.yaml local
+        with open('config.yaml') as file:
+            config = yaml.load(file, Loader=SafeLoader)
+    
+    return config
 
-# 📌 Cargar configuración desde el archivo YAML
-with open('config.yaml') as file:
-    config = yaml.load(file, Loader=SafeLoader)
+# 📌 Obtener configuración
+config = get_config()
 
 # 📌 Crear el autenticador
 authenticator = stauth.Authenticate(

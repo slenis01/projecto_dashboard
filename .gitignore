@@ -19,3 +19,7 @@ __pycache__/
 # IDE files
 .vscode/
 .idea/
+
+# Key cookie
+key_cookie.txt
+generador_key_cookie.py

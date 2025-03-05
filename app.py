@@ -18,15 +18,15 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# Ocultar barra superior de Streamlit (incluye "Manage app")
-st.markdown(
-    """
-    <style>
-    header {visibility: hidden;}
-    </style>
-    """,
-    unsafe_allow_html=True
-)
+# # Ocultar barra superior de Streamlit (incluye "Manage app")
+# st.markdown(
+#     """
+#     <style>
+#     header {visibility: hidden;}
+#     </style>
+#     """,
+#     unsafe_allow_html=True
+# )
 
 
 # 📌 Función para obtener la configuración
@@ -224,20 +224,84 @@ if st.session_state.get('authentication_status'):
             raise FileNotFoundError(f"No se encontraron archivos con prefijo {prefijo}")
         return os.path.join(directorio, max(archivos))  # max() devolverá el último archivo alfabéticamente (por fecha)
 
-    try:
-        # Encontrar el archivo más reciente
-        archivo_path = encontrar_archivo_reciente("Resultado", "informe_diario_")
-        ultima_actualizacion = os.path.getmtime(archivo_path)
-        fecha_actualizacion = datetime.fromtimestamp(ultima_actualizacion).strftime('%Y-%m-%d %H:%M:%S')
+    # 📌 Crear filtro interactivo
+    col_filter_type, col_filter_month = st.columns([1, 1])
+
+    with col_filter_type:
+        opcion_seleccionada = st.selectbox(
+            "Selecciona el tipo de dato:",
+            ["VALE+", "REVAL", "Total"]
+        )
+
+    with col_filter_month:
+        # Obtener el mes actual
+        mes_actual = datetime.now().month
         
-        # Leer el archivo Excel
+        # Crear lista de meses disponibles hasta el mes actual
+        meses = {
+            1: 'Enero',
+            2: 'Febrero',
+            3: 'Marzo',
+            4: 'Abril',
+            5: 'Mayo',
+            6: 'Junio',
+            7: 'Julio',
+            8: 'Agosto',
+            9: 'Septiembre',
+            10: 'Octubre',
+            11: 'Noviembre',
+            12: 'Diciembre'
+        }
+        
+        meses_disponibles = {k: v for k, v in meses.items() if k <= mes_actual}
+        
+        mes_seleccionado = st.selectbox(
+            "Selecciona el mes:",
+            list(meses_disponibles.values()),
+            index=len(meses_disponibles) - 1  # Seleccionar el mes actual por defecto
+        )
+        
+        # Convertir el mes seleccionado a número
+        mes_numero = list(meses.keys())[list(meses.values()).index(mes_seleccionado)]
+
+    def obtener_archivo_por_mes(mes_numero, mes_nombre):
+        try:
+            if mes_numero == datetime.now().month:
+                # Para el mes actual, usar el archivo diario con formato actual
+                return encontrar_archivo_reciente("Resultado", "informe_diario_")
+            else:
+                # Para meses anteriores, intentar usar el archivo mensual
+                archivo_mensual = os.path.join("Resultado", f"informe_mensual_{mes_nombre.lower()}.xlsx")
+                if os.path.exists(archivo_mensual):
+                    return archivo_mensual
+                else:
+                    return None  # Retornamos None si no existe el archivo
+        except Exception as e:
+            raise Exception(f"Error al obtener archivo: {str(e)}")
+
+    try:
+        # Obtener la ruta del archivo según el mes seleccionado
+        archivo_path = obtener_archivo_por_mes(mes_numero, mes_seleccionado)
+        
+        if archivo_path is None:
+            # Mostrar mensaje de error amigable y deshabilitar la selección
+            st.error(f"⚠️ Los datos para {mes_seleccionado} aún no están disponibles.")
+            st.info("👉 Por favor seleccione otro mes disponible.")
+            st.stop()  # Detener la ejecución aquí
+        
+        # Si llegamos aquí, el archivo existe
         df = pd.read_excel(archivo_path)
+        
+        # Opcional: mostrar qué archivo se está usando
+        st.caption(f"📊 Mostrando datos de: {os.path.basename(archivo_path)}")
+        
+        # Si el nombre del archivo no incluye el mes, puedes filtrar los datos después de leerlos
+        if 'Fecha' in df.columns:  # Si tienes una columna de fecha
+            df['Fecha'] = pd.to_datetime(df['Fecha'])
+            df = df[df['Fecha'].dt.month == mes_numero]
         
         # 📌 Renombrar columnas para evitar problemas de espacios
         df.columns = ["Indicador", "REVAL", "VALE+", "Total"]
-
-        # 📌 Crear filtro interactivo
-        opcion_seleccionada = st.radio("Selecciona el tipo de dato:", ["VALE+", "REVAL", "Total"], horizontal=True)
 
         # 📌 Extraer valores específicos
         # Tamaño de red
@@ -960,7 +1024,7 @@ if st.session_state.get('authentication_status'):
                     st.metric("Total de cierres", f"{len(df_filtered):,}")
 
         except FileNotFoundError:
-            st.error("No se encontró el archivo de informe diario en la carpeta Resultado")
+            st.error(f"No se encontró el archivo de informe para el mes de {mes_seleccionado}")
             st.stop()
         except Exception as e:
             st.error(f"Error al leer el archivo: {str(e)}")

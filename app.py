@@ -9,6 +9,8 @@ import yaml
 import streamlit_authenticator as stauth
 from yaml.loader import SafeLoader
 
+
+
 # 📌 Configuración de la página - DEBE SER EL PRIMER COMANDO DE STREAMLIT
 st.set_page_config(
     page_title="Tablero Indicadores CB",
@@ -16,7 +18,15 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-
+# Ocultar barra superior de Streamlit (incluye "Manage app")
+st.markdown(
+    """
+    <style>
+    header {visibility: hidden;}
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 
 
 # 📌 Función para obtener la configuración

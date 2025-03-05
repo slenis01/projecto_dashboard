@@ -56,6 +56,27 @@ def get_config():
                     "name": st.secrets["auth"]["users"]["yalibele"]["name"],
                     "password": st.secrets["auth"]["users"]["yalibele"]["password"],
                     "role": st.secrets["auth"]["users"]["yalibele"]["role"]
+                },           
+                # Usuario 4
+                st.secrets["auth"]["users"]["dorgutie"]["username"]: {
+                    "email": st.secrets["auth"]["users"]["dorgutie"]["email"],
+                    "name": st.secrets["auth"]["users"]["dorgutie"]["name"],
+                    "password": st.secrets["auth"]["users"]["dorgutie"]["password"],
+                    "role": st.secrets["auth"]["users"]["dorgutie"]["role"]
+                },
+                # Usuario 5
+                st.secrets["auth"]["users"]["magvalen"]["username"]: {
+                    "email": st.secrets["auth"]["users"]["magvalen"]["email"],
+                    "name": st.secrets["auth"]["users"]["magvalen"]["name"],
+                    "password": st.secrets["auth"]["users"]["magvalen"]["password"],
+                    "role": st.secrets["auth"]["users"]["magvalen"]["role"]
+                },
+                # Usuario 6
+                st.secrets["auth"]["users"]["clrestre"]["username"]: {
+                    "email": st.secrets["auth"]["users"]["clrestre"]["email"],
+                    "name": st.secrets["auth"]["users"]["clrestre"]["name"],
+                    "password": st.secrets["auth"]["users"]["clrestre"]["password"],
+                    "role": st.secrets["auth"]["users"]["clrestre"]["role"]
                 }
             }
         },

@@ -415,7 +415,11 @@ if st.session_state.get('authentication_status'):
                 "n_trx_reval": 17088954,
                 "monto_total": 12531612050035.30,
                 "monto_vale": 6670867004567.79,
-                "monto_reval": 5860745045467.51
+                "monto_reval": 5860745045467.51,
+                "tamano_red": 17615,
+                "tamano_vale": 8930,
+                "tamano_reval": 8685
+
             },
             2: {"mes": "Febrero",
                 "n_trx": 39334971,
@@ -423,7 +427,10 @@ if st.session_state.get('authentication_status'):
                 "n_trx_reval": 17915360,
                 "monto_total": 12796654863197.60,
                 "monto_vale": 6847684973185.17,
-                "monto_reval": 5948969890012.46
+                "monto_reval": 5948969890012.46,
+                "tamano_red": 17400,
+                "tamano_vale": 8830,
+                "tamano_reval": 8570
             },
             3: {"mes": "Marzo",
                 "n_trx": 41024457,
@@ -431,7 +438,10 @@ if st.session_state.get('authentication_status'):
                 "n_trx_reval": 18703406,
                 "monto_total": 13198739185854.20,
                 "monto_vale": 7083410119567.39,
-                "monto_reval": 6115329066286.84
+                "monto_reval": 6115329066286.84,
+                "tamano_red": 17273,
+                "tamano_vale": 8831,
+                "tamano_reval": 8442
             },
             4: {"mes": "Abril",
                 "n_trx": 43062654,
@@ -439,7 +449,10 @@ if st.session_state.get('authentication_status'):
                 "n_trx_reval": 19897995,
                 "monto_total": 13908932924068.70,
                 "monto_vale": 7380116781315.09,
-                "monto_reval": 6528816142753.63
+                "monto_reval": 6528816142753.63,
+                "tamano_red": 17124,
+                "tamano_vale": 8817,
+                "tamano_reval": 8307
             },
             5: {"mes": "Mayo",
                 "n_trx": 44206422,
@@ -447,7 +460,10 @@ if st.session_state.get('authentication_status'):
                 "n_trx_reval": 20252558,
                 "monto_total": 14243805538789.80,
                 "monto_vale": 7595871431090.04,
-                "monto_reval": 6647934107699.84
+                "monto_reval": 6647934107699.84,
+                "tamano_red": 17020,
+                "tamano_vale": 8746,
+                "tamano_reval": 8274
             },
             6: {"mes": "Junio",
                 "n_trx": 40699748,
@@ -455,7 +471,10 @@ if st.session_state.get('authentication_status'):
                 "n_trx_reval": 18562366,
                 "monto_total": 13586307429958.00,
                 "monto_vale": 7285525516986.00,
-                "monto_reval": 6300781912972.00
+                "monto_reval": 6300781912972.00,
+                "tamano_red": 17081,
+                "tamano_vale": 8761,
+                "tamano_reval": 8320
             },
             7: {"mes": "Julio",
                 "n_trx": 43727597,
@@ -463,7 +482,10 @@ if st.session_state.get('authentication_status'):
                 "n_trx_reval": 20134281,
                 "monto_total": 14629032017464.30,
                 "monto_vale": 7785002382081.35,
-                "monto_reval": 6844029635383.00
+                "monto_reval": 6844029635383.00,
+                "tamano_red": 17024,
+                "tamano_vale": 8758,
+                "tamano_reval": 8266
             },
             8: {"mes": "Agosto",
                 "n_trx": 44087671,
@@ -471,7 +493,10 @@ if st.session_state.get('authentication_status'):
                 "n_trx_reval": 20392139,
                 "monto_total": 14503442933175.50,
                 "monto_vale": 7715309415515.50,
-                "monto_reval": 6788133517660.00
+                "monto_reval": 6788133517660.00,
+                "tamano_red": 17111,
+                "tamano_vale": 8806,
+                "tamano_reval": 8305
             },
             9: {"mes": "Septiembre",
                 "n_trx": 43453537,
@@ -479,7 +504,10 @@ if st.session_state.get('authentication_status'):
                 "n_trx_reval": 19965302,
                 "monto_total": 13996580009696.00,
                 "monto_vale": 7478005410242.00,
-                "monto_reval": 6518574599454.00
+                "monto_reval": 6518574599454.00,
+                "tamano_red": 16969,
+                "tamano_vale": 8736,
+                "tamano_reval": 8233
             },
             10: {"mes": "Octubre",
                 "n_trx": 45406935,
@@ -487,7 +515,10 @@ if st.session_state.get('authentication_status'):
                 "n_trx_reval": 20940027,
                 "monto_total": 15029944063064.00,
                 "monto_vale": 7945033888498.00,
-                "monto_reval": 7084910174566.00
+                "monto_reval": 7084910174566.00,
+                "tamano_red": 16876,
+                "tamano_vale": 8734,
+                "tamano_reval": 8142
             },
             11: {"mes": "Noviembre",
                 "n_trx": 43950267,
@@ -495,7 +526,10 @@ if st.session_state.get('authentication_status'):
                 "n_trx_reval": 20282409,
                 "monto_total": 14946992943494.00,
                 "monto_vale": 7944534214050.00,
-                "monto_reval": 7002458729444.00
+                "monto_reval": 7002458729444.00,
+                "tamano_red": 16882,
+                "tamano_vale": 8762,
+                "tamano_reval": 8140
             },
             12: {"mes": "Diciembre",
                 "n_trx": 44699007,
@@ -503,7 +537,10 @@ if st.session_state.get('authentication_status'):
                 "n_trx_reval": 20646822,
                 "monto_total": 16954503228177.00,
                 "monto_vale": 8976899635297.00,
-                "monto_reval": 7977603592880.00
+                "monto_reval": 7977603592880.00,
+                "tamano_red": 17081,
+                "tamano_vale": 8797,
+                "tamano_reval": 8184
             }
         }
 
@@ -680,11 +717,11 @@ if st.session_state.get('authentication_status'):
                 textfont=dict(
                     size=24
                 ),
-                width=0.8,
+                width=0.4,
                 name=f'Valor Actual: {valor_mostrar:.1f}%'
             ))
             
-            # Agregar línea vertical de meta
+            # Agregar línea vertical de limite
             fig.add_shape(
                 type='line',
                 x0=meta, x1=meta,
@@ -692,11 +729,11 @@ if st.session_state.get('authentication_status'):
                 line=dict(color='red', width=4, dash='dash')
             )
 
-            # Añadir anotación para el valor de la meta
+            # Añadir anotación para el valor del limite
             fig.add_annotation(
                 x=max(valor_mostrar, meta) * 1.1,
                 y=0,
-                text=f'Meta: {meta}%',
+                text=f'Limite: {meta}%',
                 showarrow=False,
                 font=dict(
                     size=16,

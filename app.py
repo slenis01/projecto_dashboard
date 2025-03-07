@@ -152,7 +152,7 @@ if st.session_state.get('authentication_status'):
     else:  # viewer
         st.warning("👀 Modo Visualización Activo")  # Mensaje en amarillo
 
-        # Función para convertir la fuente a base64
+    # Función para convertir la fuente a base64
     def get_font_base64(font_path):
         with open(font_path, 'rb') as font_file:
             return base64.b64encode(font_file.read()).decode()
@@ -342,11 +342,21 @@ if st.session_state.get('authentication_status'):
         icx_total = df[df["Indicador"] == "ICX"]["Total"].values[0]
 
 
-        # 📌Puntos bloqueados por no compensacion
-        # puntos activos 
-        Cantidad_de_puntos_total = df[df["Indicador"] == "Cantidad de puntos"]["Total"].values[0]
-        Cantidad_de_puntos_vale = df[df["Indicador"] == "Cantidad de puntos"]["VALE+"].values[0]
-        Cantidad_de_puntos_reval = df[df["Indicador"] == "Cantidad de puntos"]["REVAL"].values[0]
+        # # 📌Puntos bloqueados por no compensacion
+        # # puntos activos 
+        # Cantidad_de_puntos_total = df[df["Indicador"] == "Cantidad de puntos"]["Total"].values[0]
+        # Cantidad_de_puntos_vale = df[df["Indicador"] == "Cantidad de puntos"]["VALE+"].values[0]
+        # Cantidad_de_puntos_reval = df[df["Indicador"] == "Cantidad de puntos"]["REVAL"].values[0]
+
+        # centidad de transacciones
+        n_trx_total = df[df["Indicador"] == "Número de transacciones"]["Total"].values[0]
+        n_trx_vale = df[df["Indicador"] == "Número de transacciones"]["VALE+"].values[0]
+        n_trx_reval = df[df["Indicador"] == "Número de transacciones"]["REVAL"].values[0]
+
+        # valor de transacciones
+        monto_total = df[df["Indicador"] == "Valor transacciones"]["Total"].values[0]
+        monto_vale = df[df["Indicador"] == "Valor transacciones"]["VALE+"].values[0]
+        monto_reval = df[df["Indicador"] == "Valor transacciones"]["REVAL"].values[0]
 
         # # puntos bloqueados
         # seccion_bloqueo_bloqueados_total = df[df["Indicador"] == "Puntos bloqueados - Inactivos"]["Total"].values[0]
@@ -397,6 +407,106 @@ if st.session_state.get('authentication_status'):
         meta_tamaño_red = 17081
         meta_seguros = 2300 
         meta_tasa_activacion = 70
+
+        trx_2024 = {
+            1: {"mes": "Enero",
+                "n_trx": 37451738,
+                "n_trx_vale": 20362784,
+                "n_trx_reval": 17088954,
+                "monto_total": 12531612050035.30,
+                "monto_vale": 6670867004567.79,
+                "monto_reval": 5860745045467.51
+            },
+            2: {"mes": "Febrero",
+                "n_trx": 39334971,
+                "n_trx_vale": 21419611,
+                "n_trx_reval": 17915360,
+                "monto_total": 12796654863197.60,
+                "monto_vale": 6847684973185.17,
+                "monto_reval": 5948969890012.46
+            },
+            3: {"mes": "Marzo",
+                "n_trx": 41024457,
+                "n_trx_vale": 22341051,
+                "n_trx_reval": 18703406,
+                "monto_total": 13198739185854.20,
+                "monto_vale": 7083410119567.39,
+                "monto_reval": 6115329066286.84
+            },
+            4: {"mes": "Abril",
+                "n_trx": 43062654,
+                "n_trx_vale": 23164659,
+                "n_trx_reval": 19897995,
+                "monto_total": 13908932924068.70,
+                "monto_vale": 7380116781315.09,
+                "monto_reval": 6528816142753.63
+            },
+            5: {"mes": "Mayo",
+                "n_trx": 44206422,
+                "n_trx_vale": 23953864,
+                "n_trx_reval": 20252558,
+                "monto_total": 14243805538789.80,
+                "monto_vale": 7595871431090.04,
+                "monto_reval": 6647934107699.84
+            },
+            6: {"mes": "Junio",
+                "n_trx": 40699748,
+                "n_trx_vale": 22137382,
+                "n_trx_reval": 18562366,
+                "monto_total": 13586307429958.00,
+                "monto_vale": 7285525516986.00,
+                "monto_reval": 6300781912972.00
+            },
+            7: {"mes": "Julio",
+                "n_trx": 43727597,
+                "n_trx_vale": 23591316,
+                "n_trx_reval": 20134281,
+                "monto_total": 14629032017464.30,
+                "monto_vale": 7785002382081.35,
+                "monto_reval": 6844029635383.00
+            },
+            8: {"mes": "Agosto",
+                "n_trx": 44087671,
+                "n_trx_vale": 23790532,
+                "n_trx_reval": 20392139,
+                "monto_total": 14503442933175.50,
+                "monto_vale": 7715309415515.50,
+                "monto_reval": 6788133517660.00
+            },
+            9: {"mes": "Septiembre",
+                "n_trx": 43453537,
+                "n_trx_vale": 23488235,
+                "n_trx_reval": 19965302,
+                "monto_total": 13996580009696.00,
+                "monto_vale": 7478005410242.00,
+                "monto_reval": 6518574599454.00
+            },
+            10: {"mes": "Octubre",
+                "n_trx": 45406935,
+                "n_trx_vale": 24466908,
+                "n_trx_reval": 20940027,
+                "monto_total": 15029944063064.00,
+                "monto_vale": 7945033888498.00,
+                "monto_reval": 7084910174566.00
+            },
+            11: {"mes": "Noviembre",
+                "n_trx": 43950267,
+                "n_trx_vale": 23667858,
+                "n_trx_reval": 20282409,
+                "monto_total": 14946992943494.00,
+                "monto_vale": 7944534214050.00,
+                "monto_reval": 7002458729444.00
+            },
+            12: {"mes": "Diciembre",
+                "n_trx": 44699007,
+                "n_trx_vale": 24052185,
+                "n_trx_reval": 20646822,
+                "monto_total": 16954503228177.00,
+                "monto_vale": 8976899635297.00,
+                "monto_reval": 7977603592880.00
+            }
+        }
+
 
         def crear_indicador_numerico(valor_mostrar, meta, titulo, mostrar_delta=True):
             """
@@ -642,38 +752,125 @@ if st.session_state.get('authentication_status'):
             
             return fig
 
+        def abreviar_numero(valor):
+            if valor >= 1e12:
+                return valor / 1e12  # Trillones
+            elif valor >= 1e9:
+                return valor / 1e9  # Billones
+            elif valor >= 1e6:
+                return valor / 1e6  # Millones
+            elif valor >= 1e3:
+                return valor / 1e3  # Miles
+            else:
+                return valor  # Número sin abreviar
+
+
+
         # 📌 Crear columnas para distribuir contenido (primera fila)
         st.markdown("---")
 
-        # Primera fila - Valor único centrado
-        valor_mostrar = {
-            "VALE+": Cantidad_de_puntos_vale,
-            "REVAL": Cantidad_de_puntos_reval,
-            "Total": Cantidad_de_puntos_total
-        }[opcion_seleccionada]
-        
-        # Alerta si el tamaño de la red es menor a la meta "Total"
-        if opcion_seleccionada == "Total":
-            if valor_mostrar < meta_tamaño_red:
-                st.error(f"⚠️ ¡Atención! El tamaño de red **{valor_mostrar:,}** está **por debajo** de la meta de **{meta_tamaño_red:,}**.")
+        # Primera fila - Tres columnas
+        col1, col2, col3 = st.columns([1, 1, 1])
 
+        with col1:
+            valor_mostrar = {
+                "VALE+": cantidad_vale,
+                "REVAL": cantidad_reval,
+                "Total": cantidad_total
+            }[opcion_seleccionada]
 
-        # Crear y mostrar el indicador de tamaño de red
-        fig = crear_indicador_numerico(
-            valor_mostrar=valor_mostrar,
-            meta=meta_tamaño_red,
-            titulo=f"Tamaño de Red {opcion_seleccionada}",
-            mostrar_delta=(opcion_seleccionada == "Total")
-        )
+            # Alerta si el tamaño de la red es menor a la meta "Total"
+            if opcion_seleccionada == "Total":
+                if valor_mostrar < meta_tamaño_red:
+                    st.error(f"⚠️ ¡Atención! El tamaño de red **{valor_mostrar:,}** está **por debajo** de la meta de **{meta_tamaño_red:,}**.")
 
-        # Mostrar en Streamlit
-        st.plotly_chart(fig, use_container_width=True)
+            
+            # Crear y mostrar el indicador de tamaño de red
+            fig = crear_indicador_numerico(
+                valor_mostrar=valor_mostrar,
+                meta=meta_tamaño_red,
+                titulo=f"Tamaño de Red {opcion_seleccionada}",
+                mostrar_delta=(opcion_seleccionada == "Total")
+            )
+            
+            # Mostrar en Streamlit
+            st.plotly_chart(fig, use_container_width=True)
+            
+
+        with col2: # Número de transacciones
+            # Aquí puedes agregar el contenido para la segunda columna
+            valor_mostrar = {
+                "VALE+": n_trx_vale,
+                "REVAL": n_trx_reval,
+                "Total": n_trx_total
+            }[opcion_seleccionada]
+            
+            fig = crear_indicador_numerico(
+                valor_mostrar=valor_mostrar,
+                meta=meta_tamaño_red,  # Ajustar esta meta según corresponda
+                titulo=f"Transacciones {opcion_seleccionada}",
+                mostrar_delta=(opcion_seleccionada == "Total")
+            )
+            st.plotly_chart(fig, use_container_width=True)
+
+        with col3:
+            # 📌 Asegurar que los valores sean numéricos
+            monto_total = float(str(monto_total).replace(",", ""))
+            monto_vale = float(str(monto_vale).replace(",", ""))
+            monto_reval = float(str(monto_reval).replace(",", ""))
+            
+            # Obtener el valor de referencia del mes actual
+            mes_actual = datetime.now().month
+            valor_referencia = trx_2024[mes_actual]["monto_total"]
+            
+            # Primero definir valor_mostrar
+            valor_mostrar = {
+                "VALE+": monto_vale,
+                "REVAL": monto_reval,
+                "Total": monto_total
+            }[opcion_seleccionada]
+
+            # Luego abreviar el valor
+            valor_mostrar_abreviado = abreviar_numero(valor_mostrar)
+
+            # 📌 Crear gráfico con formato de dinero
+            fig = go.Figure(go.Indicator(
+                mode="number+delta",
+                value=valor_mostrar_abreviado,
+                number={
+                    "prefix": "$",
+                    "suffix": "B" if valor_mostrar >= 1e9 else "M" if valor_mostrar >= 1e6 else "",
+                    "font": {"size": 80}
+                },
+                delta={
+                    "reference": valor_referencia,
+                    "relative": True, 
+                    "valueformat": ".1f%%",
+                    "increasing": {"color": "green"},
+                    "decreasing": {"color": "red"}
+                },
+                title={
+                    "text": f"Monto {opcion_seleccionada}",
+                    "font": {"size": 24}
+                }
+            ))
+
+            # Agregar anotación con el mes de referencia
+            fig.add_annotation(
+                text=f"Referencia: {trx_2024[mes_actual]['mes']} 2024",
+                x=0.5, y=0.1,
+                showarrow=False,
+                font=dict(size=16, color="gray")
+            )
+
+            st.plotly_chart(fig, use_container_width=True)
+
         st.markdown("---")
 
-        # Segunda fila - 3 columnas
-        col2, col3, col4 = st.columns([1, 1, 1])
+        #Segunda fila - 3 columnas
+        col4, col5, col6 = st.columns([1, 1, 1])
 
-        with col2:
+        with col4:
             # Gauge para NPS
             fig = crear_gauge(
                 valor=nps_total,
@@ -683,7 +880,7 @@ if st.session_state.get('authentication_status'):
             )
             st.plotly_chart(fig, use_container_width=True)
 
-        with col3:
+        with col5:
             # Gauge para ICX
             fig = crear_gauge(
                 valor=float(icx_total),
@@ -696,7 +893,7 @@ if st.session_state.get('authentication_status'):
             st.plotly_chart(fig, use_container_width=True)
 
 
-        with col4:
+        with col6:
             # Crear gráfico de bullet chart para bloqueos por no compensacion    
             valor_mostrar = {
                 "VALE+": float(str(bloqueos_vale).replace('%', '')),
@@ -720,9 +917,9 @@ if st.session_state.get('authentication_status'):
         st.markdown("---")
 
         # Tercera fila - 3 columnas
-        col5, col6, col7 = st.columns([1, 1, 1])
+        col7, col8, col9 = st.columns([1, 1, 1])
 
-        with col5:
+        with col7:
             # Gauge para Productividad
             productividad_df = df[df["Indicador"] == "Productividad - Cumple meta (%)"]["Total"].values[0]
             productividad_total = float(str(productividad_df).replace('%', ''))
@@ -735,7 +932,7 @@ if st.session_state.get('authentication_status'):
             )
             st.plotly_chart(fig, use_container_width=True)
             
-        with col6: # SEGUROS
+        with col8: # SEGUROS
             # Seleccionar el valor de puntos activos según la opción
             valor_activos = {
                 "VALE+": seguros_vale,
@@ -753,7 +950,7 @@ if st.session_state.get('authentication_status'):
             # 📌 Mostrar en Streamlit
             st.plotly_chart(fig, use_container_width=True)
 
-        with col7: # MALA PRACTICA
+        with col9: # MALA PRACTICA
             valor_mostrar = {
                 "VALE+": float(str(mala_practica_vale).replace('%', '')),
                 "REVAL": float(str(mala_practica_reval).replace('%', '')),
@@ -777,9 +974,9 @@ if st.session_state.get('authentication_status'):
         st.markdown("---")
 
         # Cuarta fila - 3 columnas
-        col8, col9, col10 = st.columns([1, 1, 1])
+        col10, col11, col12 = st.columns([1, 1, 1])
 
-        with col8:
+        with col10:
             # Gauge para Puntos bloqueados - Activos
             puntos_bloqueados_df = df[df["Indicador"] == "Puntos bloqueados - Activos (%)"]["Total"].values[0]
             puntos_bloqueados_valor = float(str(puntos_bloqueados_df).replace('%', ''))
@@ -792,7 +989,7 @@ if st.session_state.get('authentication_status'):
             )
             st.plotly_chart(fig, use_container_width=True)
 
-        with col9: # APERTURAS
+        with col11: # APERTURAS
             fig = crear_grafico_pie(
                 valores_vale=aperturas_vale,
                 valores_reval=aperturas_reval,
@@ -801,7 +998,7 @@ if st.session_state.get('authentication_status'):
             )
             st.plotly_chart(fig, use_container_width=True)
 
-        with col10: # CIERRES
+        with col12: # CIERRES
             fig = crear_grafico_pie(
                 valores_vale=cierres_vale,
                 valores_reval=cierres_reval,

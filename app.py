@@ -831,102 +831,17 @@ if st.session_state.get('authentication_status'):
                 return valor, ""  # En caso de error, devuelve el número original sin sufijo
 
 
-        def crear_grafico_waterfall(valor_actual, valor_2024, valor_mes_anterior, mes_seleccionado):
-            """
-            Crea un gráfico de tipo waterfall que compara valores actuales con históricos
-            """
-            # Función auxiliar para limpiar y convertir números
-            def limpiar_numero(valor):
-                if isinstance(valor, str):
-                    # Eliminar cualquier símbolo de moneda y espacios
-                    valor = valor.replace('$', '').strip()
-                    # Eliminar todas las comas
-                    valor = valor.replace(',', '')
-                try:
-                    return float(valor)
-                except (ValueError, TypeError):
-                    return 0
-
-            # Asegurar que todos los valores sean numéricos
-            try:
-                valor_actual = limpiar_numero(valor_actual)
-                valor_2024 = limpiar_numero(valor_2024)
-                valor_mes_anterior = limpiar_numero(valor_mes_anterior)
-            except Exception:
-                return None
-
-            # Definir colores base
-            text_color = "#484848"
-            background_color = "rgba(0,0,0,0)"
-            grid_color = "rgba(128, 128, 128, 0.2)"
-
-            # Calcular las variaciones
-            var_vs_2024 = valor_actual - valor_2024
-            var_vs_anterior = valor_actual - valor_mes_anterior
-            
-            # Crear el gráfico
-            fig = go.Figure(go.Waterfall(
-                name="Comparación",
-                orientation="v",
-                measure=["relative", "relative", "total"],
-                x=[f"Meta {last_year}", "Var vs Mes Anterior", "Valor Actual"],
-                y=[valor_2024, var_vs_anterior, valor_actual],
-                # text=[f"${valor:,.0f}" for valor in [valor_2024, var_vs_anterior, valor_actual]],
-                text=[abreviar_numero_texto(valor) for valor in [valor_2024, var_vs_anterior, valor_actual]],
-
-                textposition="outside",
-                textfont=dict(size=14),
-                connector={"line": {"color": grid_color}},
-                decreasing={"marker": {"color": "#FF4B4B"}},
-                increasing={"marker": {"color": "#B0F2AE"}},
-                totals={"marker": {"color": "#1f77b4"}}
-            ))
-            
-            # Actualizar el layout con márgenes ajustados
-            fig.update_layout(
-                title={
-                    'text': f"Comparación {mes_seleccionado}",
-                    'y': 0.95,
-                    'x': 0.5,
-                    'xanchor': 'center',
-                    'yanchor': 'top',
-                    'font': {'size': 24}
-                },
-                showlegend=False,
-                height=400,  # Mantener altura
-                margin=dict(
-                    l=80,    # Margen izquierdo aumentado
-                    r=80,    # Margen derecho aumentado
-                    t=100,   # Margen superior aumentado
-                    b=50     # Margen inferior
-                ),
-                yaxis={
-                    'type': 'linear',
-                    'title': 'Valor',
-                    'tickformat': '$,.0f',
-                    'gridcolor': grid_color,
-                    'automargin': True  # Asegura que los valores del eje Y sean visibles
-                },
-                xaxis={
-                    'title': None,
-                    'automargin': True  # Asegura que las etiquetas del eje X sean visibles
-                },
-                plot_bgcolor=background_color,
-                paper_bgcolor=background_color
-            )
-            
-            # Ajustar el formato del texto de las barras
-            fig.update_traces(
-                textposition='outside',
-                textfont=dict(size=12),  # Tamaño de fuente reducido
-                cliponaxis=False  # Evita que el texto se corte
-            )
-
-            # Agregar anotaciones con porcentajes de variación
-            if var_vs_anterior != 0 and valor_mes_anterior != 0:
-                porcentaje = (var_vs_anterior/valor_mes_anterior)*100
-
         def indicador_con_variacion(valor_actual, var_mes_anterior, var_anio_anterior, titulo):
+            """
+            Crea un indicador que muestra el valor actual y sus variaciones
+            
+            Args:
+                valor_actual: Valor numérico a mostrar
+                var_mes_anterior: Variación porcentual respecto al mes anterior
+                var_anio_anterior: Variación porcentual respecto al año anterior
+                titulo: Título del indicador
+            """
+            # Determinar colores según las variaciones
             color_mes_anterior = "green" if var_mes_anterior >= 0 else "red"
             color_anio_anterior = "green" if var_anio_anterior >= 0 else "red"
             
@@ -937,32 +852,45 @@ if st.session_state.get('authentication_status'):
                 mode="number",
                 value=valor_actual,
                 number={
-                    "prefix": "$",
-                    "valueformat": ".2s",
+                    "valueformat": ",",
                     "font": {"size": 60}
                 },
-                title={"text": titulo, "font": {"size": 24}},
+                title={
+                    "text": titulo,
+                    "font": {"size": 24}
+                },
                 domain={"x": [0, 1], "y": [0.6, 1]}
             ))
 
             # Variación vs Mes anterior
             fig.add_annotation(
                 text=f"{'▲' if var_mes_anterior >= 0 else '▼'} {abs(var_mes_anterior):.1f}% vs Mes anterior",
-                x=0.5, y=0.45,
+                x=0.5,
+                y=0.45,
                 showarrow=False,
-                font={"size": 20, "color": color_mes_anterior},
-                xref='paper', yref='paper'
+                font={
+                    "size": 20,
+                    "color": color_mes_anterior
+                },
+                xref='paper',
+                yref='paper'
             )
 
             # Variación vs Año anterior
             fig.add_annotation(
                 text=f"{'▲' if var_anio_anterior >= 0 else '▼'} {abs(var_anio_anterior):.1f}% vs Año anterior",
-                x=0.5, y=0.3,
+                x=0.5,
+                y=0.3,
                 showarrow=False,
-                font={"size": 20, "color": color_anio_anterior},
-                xref='paper', yref='paper'
+                font={
+                    "size": 20,
+                    "color": color_anio_anterior
+                },
+                xref='paper',
+                yref='paper'
             )
 
+            # Actualizar el layout
             fig.update_layout(
                 height=350,
                 margin=dict(t=40, b=40, l=20, r=20),
@@ -971,8 +899,6 @@ if st.session_state.get('authentication_status'):
             )
 
             return fig
-
-
 
 
 
@@ -1713,3 +1639,4 @@ elif st.session_state.get('authentication_status') == False:
     st.error("❌ Usuario o contraseña incorrectos")
 elif st.session_state.get('authentication_status') is None:
     st.warning("🔑 Por favor inicia sesión")
+

@@ -238,12 +238,39 @@ if st.session_state.get('authentication_status'):
         unsafe_allow_html=True
 )
 
-    # Función para encontrar el archivo más reciente con un prefijo específico
+    # Definir la ruta base usando secrets
+    BASE_PATH = st.secrets.get("BASE_PATH", os.getcwd())
+    RESULTADO_DIR = os.path.join(BASE_PATH, "Resultado")
+
     def encontrar_archivo_reciente(directorio, prefijo):
-        archivos = [f for f in os.listdir(directorio) if f.startswith(prefijo) and (f.endswith('.csv') or f.endswith('.xlsx'))]
-        if not archivos:
-            raise FileNotFoundError(f"No se encontraron archivos con prefijo {prefijo}")
-        return os.path.join(directorio, max(archivos))  # max() devolverá el último archivo alfabéticamente (por fecha)
+        """
+        Encuentra el archivo más reciente con manejo de rutas absolutas
+        """
+        try:
+            # Usar ruta absoluta
+            ruta_absoluta = os.path.join(BASE_PATH, directorio)
+            
+            # Debug para verificar rutas
+            st.write(f"Buscando en: {ruta_absoluta}")
+            st.write(f"Buscando archivos con prefijo: {prefijo}")
+            
+            if not os.path.exists(ruta_absoluta):
+                st.error(f"Directorio no encontrado: {ruta_absoluta}")
+                return None
+
+            archivos = [f for f in os.listdir(ruta_absoluta) 
+                       if f.startswith(prefijo) and (f.endswith('.csv') or f.endswith('.xlsx'))]
+            
+            if not archivos:
+                st.warning(f"No se encontraron archivos con prefijo {prefijo}")
+                return None
+
+            archivo_reciente = max(archivos)
+            return os.path.join(ruta_absoluta, archivo_reciente)
+
+        except Exception as e:
+            st.error(f"Error al buscar archivo: {str(e)}")
+            return None
 
     # 📌 Crear filtro interactivo
     col_filter_month, col_filter_type = st.columns([1, 1])

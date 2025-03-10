@@ -246,7 +246,7 @@ if st.session_state.get('authentication_status'):
         return os.path.join(directorio, max(archivos))  # max() devolverá el último archivo alfabéticamente (por fecha)
 
     # 📌 Crear filtro interactivo
-    col_filter_type, col_filter_month = st.columns([1, 1])
+    col_filter_month, col_filter_type = st.columns([1, 1])
 
     with col_filter_type:
         opcion_seleccionada = st.selectbox(
@@ -257,6 +257,8 @@ if st.session_state.get('authentication_status'):
     with col_filter_month:
         # Obtener el mes actual
         mes_actual = datetime.now().month
+        año_actual = datetime.now().year
+        last_year = año_actual - 1  # Para siempre mostrar el año siguiente
         
         # Crear lista de meses disponibles hasta el mes actual
         meses = {
@@ -291,12 +293,25 @@ if st.session_state.get('authentication_status'):
                 # Para el mes actual, usar el archivo diario con formato actual
                 return encontrar_archivo_reciente("Resultado", "informe_diario_")
             else:
-                # Para meses anteriores, intentar usar el archivo mensual
-                archivo_mensual = os.path.join("Resultado", f"informe_mensual_{mes_nombre.lower()}.xlsx")
+                # Para meses anteriores, intentar usar el archivo mensual con año
+                año_actual = datetime.now().year
+                
+                # Primero intenta buscar el archivo del año actual
+                archivo_mensual = os.path.join("Resultado", f"informe_mensual_{mes_nombre.lower()}_{año_actual}.xlsx")
                 if os.path.exists(archivo_mensual):
                     return archivo_mensual
-                else:
-                    return None  # Retornamos None si no existe el archivo
+                
+                # Si no existe, busca el archivo del año anterior
+                archivo_mensual_anterior = os.path.join("Resultado", f"informe_mensual_{mes_nombre.lower()}_{año_actual-1}.xlsx")
+                if os.path.exists(archivo_mensual_anterior):
+                    return archivo_mensual_anterior
+                
+                # Si no existe con año, intenta el formato antiguo sin año
+                archivo_mensual_sin_año = os.path.join("Resultado", f"informe_mensual_{mes_nombre.lower()}.xlsx")
+                if os.path.exists(archivo_mensual_sin_año):
+                    return archivo_mensual_sin_año
+                
+                return None  # Retornamos None si no existe ninguna versión del archivo
         except Exception as e:
             raise Exception(f"Error al obtener archivo: {str(e)}")
 
@@ -545,6 +560,12 @@ if st.session_state.get('authentication_status'):
         }
 
 
+        def calcular_variacion_porcentual(valor_actual, valor_anterior):
+            """Calcula la variación porcentual entre dos valores"""
+            if valor_anterior == 0:
+                return 0
+            return ((valor_actual - valor_anterior) / valor_anterior) * 100
+
         def crear_indicador_numerico(valor_mostrar, meta, titulo, mostrar_delta=True):
             """
             Crea un indicador numérico con Plotly
@@ -788,20 +809,205 @@ if st.session_state.get('authentication_status'):
             )
             
             return fig
+        
+        def abreviar_numero(valor):
+            """
+            Convierte números grandes en formato abreviado con sufijos en español.
+            Siempre devuelve un número y un sufijo.
+            """
+            try:
+                valor = float(valor)  # Asegurar que sea numérico
+                if valor >= 1e12:
+                    return round(valor / 1e12, 2), " B"  # Billones
+                elif valor >= 1e9:
+                    return round(valor / 1e9, 2), " MM"  # Mil millones
+                elif valor >= 1e6:
+                    return round(valor / 1e6, 2), " M"  # Millones
+                elif valor >= 1e3:
+                    return round(valor / 1e3, 2), " K"  # Miles
+                else:
+                    return round(valor, 2), ""  # Número sin abreviar
+            except Exception as e:
+                return valor, ""  # En caso de error, devuelve el número original sin sufijo
+
+
+        def crear_grafico_waterfall(valor_actual, valor_2024, valor_mes_anterior, mes_seleccionado):
+            """
+            Crea un gráfico de tipo waterfall que compara valores actuales con históricos
+            """
+            # Función auxiliar para limpiar y convertir números
+            def limpiar_numero(valor):
+                if isinstance(valor, str):
+                    # Eliminar cualquier símbolo de moneda y espacios
+                    valor = valor.replace('$', '').strip()
+                    # Eliminar todas las comas
+                    valor = valor.replace(',', '')
+                try:
+                    return float(valor)
+                except (ValueError, TypeError):
+                    return 0
+
+            # Asegurar que todos los valores sean numéricos
+            try:
+                valor_actual = limpiar_numero(valor_actual)
+                valor_2024 = limpiar_numero(valor_2024)
+                valor_mes_anterior = limpiar_numero(valor_mes_anterior)
+            except Exception:
+                return None
+
+            # Definir colores base
+            text_color = "#484848"
+            background_color = "rgba(0,0,0,0)"
+            grid_color = "rgba(128, 128, 128, 0.2)"
+
+            # Calcular las variaciones
+            var_vs_2024 = valor_actual - valor_2024
+            var_vs_anterior = valor_actual - valor_mes_anterior
+            
+            # Crear el gráfico
+            fig = go.Figure(go.Waterfall(
+                name="Comparación",
+                orientation="v",
+                measure=["relative", "relative", "total"],
+                x=[f"Meta {last_year}", "Var vs Mes Anterior", "Valor Actual"],
+                y=[valor_2024, var_vs_anterior, valor_actual],
+                # text=[f"${valor:,.0f}" for valor in [valor_2024, var_vs_anterior, valor_actual]],
+                text=[abreviar_numero_texto(valor) for valor in [valor_2024, var_vs_anterior, valor_actual]],
+
+                textposition="outside",
+                textfont=dict(size=14),
+                connector={"line": {"color": grid_color}},
+                decreasing={"marker": {"color": "#FF4B4B"}},
+                increasing={"marker": {"color": "#B0F2AE"}},
+                totals={"marker": {"color": "#1f77b4"}}
+            ))
+            
+            # Actualizar el layout con márgenes ajustados
+            fig.update_layout(
+                title={
+                    'text': f"Comparación {mes_seleccionado}",
+                    'y': 0.95,
+                    'x': 0.5,
+                    'xanchor': 'center',
+                    'yanchor': 'top',
+                    'font': {'size': 24}
+                },
+                showlegend=False,
+                height=400,  # Mantener altura
+                margin=dict(
+                    l=80,    # Margen izquierdo aumentado
+                    r=80,    # Margen derecho aumentado
+                    t=100,   # Margen superior aumentado
+                    b=50     # Margen inferior
+                ),
+                yaxis={
+                    'type': 'linear',
+                    'title': 'Valor',
+                    'tickformat': '$,.0f',
+                    'gridcolor': grid_color,
+                    'automargin': True  # Asegura que los valores del eje Y sean visibles
+                },
+                xaxis={
+                    'title': None,
+                    'automargin': True  # Asegura que las etiquetas del eje X sean visibles
+                },
+                plot_bgcolor=background_color,
+                paper_bgcolor=background_color
+            )
+            
+            # Ajustar el formato del texto de las barras
+            fig.update_traces(
+                textposition='outside',
+                textfont=dict(size=12),  # Tamaño de fuente reducido
+                cliponaxis=False  # Evita que el texto se corte
+            )
+
+            # Agregar anotaciones con porcentajes de variación
+            if var_vs_anterior != 0 and valor_mes_anterior != 0:
+                porcentaje = (var_vs_anterior/valor_mes_anterior)*100
+
+        def indicador_con_variacion(valor_actual, var_mes_anterior, var_anio_anterior, titulo):
+            color_mes_anterior = "green" if var_mes_anterior >= 0 else "red"
+            color_anio_anterior = "green" if var_anio_anterior >= 0 else "red"
+            
+            fig = go.Figure()
+
+            # Valor Principal
+            fig.add_trace(go.Indicator(
+                mode="number",
+                value=valor_actual,
+                number={
+                    "prefix": "$",
+                    "valueformat": ".2s",
+                    "font": {"size": 60}
+                },
+                title={"text": titulo, "font": {"size": 24}},
+                domain={"x": [0, 1], "y": [0.6, 1]}
+            ))
+
+            # Variación vs Mes anterior
+            fig.add_annotation(
+                text=f"{'▲' if var_mes_anterior >= 0 else '▼'} {abs(var_mes_anterior):.1f}% vs Mes anterior",
+                x=0.5, y=0.45,
+                showarrow=False,
+                font={"size": 20, "color": color_mes_anterior},
+                xref='paper', yref='paper'
+            )
+
+            # Variación vs Año anterior
+            fig.add_annotation(
+                text=f"{'▲' if var_anio_anterior >= 0 else '▼'} {abs(var_anio_anterior):.1f}% vs Año anterior",
+                x=0.5, y=0.3,
+                showarrow=False,
+                font={"size": 20, "color": color_anio_anterior},
+                xref='paper', yref='paper'
+            )
+
+            fig.update_layout(
+                height=350,
+                margin=dict(t=40, b=40, l=20, r=20),
+                paper_bgcolor="rgba(0,0,0,0)",
+                plot_bgcolor="rgba(0,0,0,0)"
+            )
+
+            return fig
+
+
+
+
 
         def abreviar_numero(valor):
-            if valor >= 1e12:
-                return valor / 1e12  # Trillones
-            elif valor >= 1e9:
-                return valor / 1e9  # Billones
-            elif valor >= 1e6:
-                return valor / 1e6  # Millones
-            elif valor >= 1e3:
-                return valor / 1e3  # Miles
-            else:
-                return valor  # Número sin abreviar
+            """
+            Convierte números grandes en formato abreviado con sufijos en español.
+            Siempre devuelve un número y un sufijo.
+            """
+            try:
+                valor = float(valor)  # Asegurar que sea numérico
+                if valor >= 1e12:
+                    return round(valor / 1e12, 2), " B"  # Billones
+                elif valor >= 1e9:
+                    return round(valor / 1e9, 2), " MM"  # Mil millones
+                elif valor >= 1e6:
+                    return round(valor / 1e6, 2), " M"  # Millones
+                elif valor >= 1e3:
+                    return round(valor / 1e3, 2), " K"  # Miles
+                else:
+                    return round(valor, 2), ""  # Número sin abreviar
+            except Exception as e:
+                return valor, ""  # En caso de error, devuelve el número original sin sufijo
 
 
+
+        def es_mes_historico(mes_num, mes_act):
+            """
+            Determina si el mes seleccionado es histórico
+            """
+            try:
+                mes_num = int(mes_num)
+                mes_act = int(mes_act)
+                return mes_num < mes_act
+            except (ValueError, TypeError):
+                return False
 
         # 📌 Crear columnas para distribuir contenido (primera fila)
         st.markdown("---")
@@ -810,97 +1016,272 @@ if st.session_state.get('authentication_status'):
         col1, col2, col3 = st.columns([1, 1, 1])
 
         with col1:
-            valor_mostrar = {
-                "VALE+": cantidad_vale,
-                "REVAL": cantidad_reval,
-                "Total": cantidad_total
-            }[opcion_seleccionada]
+            mes_actual_num = int(datetime.now().month)
+            es_historico = es_mes_historico(mes_numero, mes_actual_num)
+            
+            if es_mes_historico(mes_numero, mes_actual_num):
+                # Seleccionar el valor según la opción elegida
+                if opcion_seleccionada == "VALE+":
+                    valor_actual = cantidad_vale
+                    valor_2024 = trx_2024[mes_numero]["tamano_vale"]
+                    titulo = "Tamaño de Red VALE+"
+                    # Debug prints
+                    st.write(f"Valor actual VALE+ (mes seleccionado): {valor_actual:,d}")
+                    st.write(f"Valor mismo mes año anterior VALE+: {valor_2024:,d}")
+                elif opcion_seleccionada == "REVAL":
+                    valor_actual = cantidad_reval
+                    valor_2024 = trx_2024[mes_numero]["tamano_reval"]
+                    titulo = "Tamaño de Red REVAL"
+                    # Debug prints
+                    st.write(f"Valor actual REVAL (mes seleccionado): {valor_actual:,d}")
+                    st.write(f"Valor mismo mes año anterior REVAL: {valor_2024:,d}")
+                else:  # Total
+                    valor_actual = cantidad_total
+                    valor_2024 = trx_2024[mes_numero]["tamano_red"]
+                    titulo = "Tamaño de Red"
+                    # Debug prints
+                    st.write(f"Valor actual Total (mes seleccionado): {cantidad_total:,d}")
+                    st.write(f"Valor mismo mes año anterior Total: {trx_2024[mes_numero]['tamano_red']:,d}")
 
-            # Alerta si el tamaño de la red es menor a la meta "Total"
-            if opcion_seleccionada == "Total":
-                if valor_mostrar < meta_tamaño_red:
-                    st.error(f"⚠️ ¡Atención! El tamaño de red **{valor_mostrar:,}** está **por debajo** de la meta de **{meta_tamaño_red:,}**.")
+                try:
+                    # Comparar con el mismo mes del año siguiente
+                    var_anio_anterior = calcular_variacion_porcentual(valor_actual, valor_2024)
+                    
+                    # Comparar con el mes anterior
+                    mes_anterior = mes_numero - 1 if mes_numero > 1 else 12
+                    archivo_mes_anterior = obtener_archivo_por_mes(mes_anterior, meses[mes_anterior])
+                    if archivo_mes_anterior:
+                        df_anterior = pd.read_excel(archivo_mes_anterior)
+                        if opcion_seleccionada == "VALE+":
+                            valor_mes_anterior = df_anterior[df_anterior["Indicador"] == "Cantidad de puntos"]["VALE+"].values[0]
+                        elif opcion_seleccionada == "REVAL":
+                            valor_mes_anterior = df_anterior[df_anterior["Indicador"] == "Cantidad de puntos"]["REVAL"].values[0]
+                        else:
+                            valor_mes_anterior = df_anterior[df_anterior["Indicador"] == "Cantidad de puntos"]["Total"].values[0]
+                        
+                        st.write(f"Valor mes anterior {opcion_seleccionada}: {valor_mes_anterior:,d}")
+                        var_mes_anterior = calcular_variacion_porcentual(valor_actual, valor_mes_anterior)
+                    else:
+                        var_mes_anterior = 0
+                        st.warning(f"No se encontró información para el mes anterior")
+                    
+                    fig1 = indicador_con_variacion(
+                        valor_actual=valor_actual,
+                        var_mes_anterior=var_mes_anterior,
+                        var_anio_anterior=var_anio_anterior,
+                        titulo=titulo
+                    )
+                    st.plotly_chart(fig1, use_container_width=True, key=f"tamaño_red_{opcion_seleccionada}")
+                except Exception as e:
+                    st.error(f"Error al procesar tamaño de red histórico: {str(e)}")
+            else:
+                # Para mes actual (marzo)
+                if opcion_seleccionada == "VALE+":
+                    valor_actual = trx_2024[3]["tamano_vale"]
+                    titulo = "Tamaño de Red VALE+"
+                    st.write(f"Valor actual VALE+ (marzo): {valor_actual:,d}")
+                elif opcion_seleccionada == "REVAL":
+                    valor_actual = trx_2024[3]["tamano_reval"]
+                    titulo = "Tamaño de Red REVAL"
+                    st.write(f"Valor actual REVAL (marzo): {valor_actual:,d}")
+                else:
+                    valor_actual = trx_2024[3]["tamano_red"]
+                    titulo = "Tamaño de Red"
+                    st.write(f"Valor actual Total (marzo): {valor_actual:,d}")
 
-            
-            # Crear y mostrar el indicador de tamaño de red
-            fig = crear_indicador_numerico(
-                valor_mostrar=valor_mostrar,
-                meta=meta_tamaño_red,
-                titulo=f"Tamaño de Red {opcion_seleccionada}",
-                mostrar_delta=(opcion_seleccionada == "Total")
-            )
-            
-            # Mostrar en Streamlit
-            st.plotly_chart(fig, use_container_width=True)
-            
+                try:
+                    fig1 = go.Figure(go.Indicator(
+                        mode="number",
+                        value=valor_actual,
+                        number={'valueformat': ",", 'font': {'size': 50}},
+                        title={'text': titulo, 'font': {'size': 20}},
+                    ))
+                    fig1.update_layout(height=350)
+                    st.plotly_chart(fig1, use_container_width=True, key=f"tamaño_red_actual_{opcion_seleccionada}")
+                except Exception as e:
+                    st.error(f"Error al procesar tamaño de red actual: {str(e)}")
 
-        with col2: # Número de transacciones
-            # Aquí puedes agregar el contenido para la segunda columna
-            valor_mostrar = {
-                "VALE+": n_trx_vale,
-                "REVAL": n_trx_reval,
-                "Total": n_trx_total
-            }[opcion_seleccionada]
-            
-            fig = crear_indicador_numerico(
-                valor_mostrar=valor_mostrar,
-                meta=meta_tamaño_red,  # Ajustar esta meta según corresponda
-                titulo=f"Transacciones {opcion_seleccionada}",
-                mostrar_delta=(opcion_seleccionada == "Total")
-            )
-            st.plotly_chart(fig, use_container_width=True)
+        with col2:
+            if es_mes_historico(mes_numero, mes_actual_num):
+                # Seleccionar el valor según la opción elegida
+                if opcion_seleccionada == "VALE+":
+                    valor_actual = n_trx_vale
+                    valor_2024 = trx_2024[mes_numero]["n_trx_vale"]
+                    titulo = "Transacciones VALE+"
+                    # Debug prints
+                    st.write(f"Valor actual VALE+ (mes seleccionado): {valor_actual:,d}")
+                    st.write(f"Valor mismo mes año anterior VALE+: {valor_2024:,d}")
+                elif opcion_seleccionada == "REVAL":
+                    valor_actual = n_trx_reval
+                    valor_2024 = trx_2024[mes_numero]["n_trx_reval"]
+                    titulo = "Transacciones REVAL"
+                    # Debug prints
+                    st.write(f"Valor actual REVAL (mes seleccionado): {valor_actual:,d}")
+                    st.write(f"Valor mismo mes año anterior REVAL: {valor_2024:,d}")
+                else:  # Total
+                    valor_actual = n_trx_total
+                    valor_2024 = trx_2024[mes_numero]["n_trx"]
+                    titulo = "Transacciones"
+                    # Debug prints
+                    st.write(f"Valor actual Total (mes seleccionado): {valor_actual:,d}")
+                    st.write(f"Valor mismo mes año anterior Total: {valor_2024:,d}")
+
+                try:
+                    var_anio_anterior = calcular_variacion_porcentual(valor_actual, valor_2024)
+                    
+                    mes_anterior = mes_numero - 1 if mes_numero > 1 else 12
+                    archivo_mes_anterior = obtener_archivo_por_mes(mes_anterior, meses[mes_anterior])
+                    if archivo_mes_anterior:
+                        df_anterior = pd.read_excel(archivo_mes_anterior)
+                        if opcion_seleccionada == "VALE+":
+                            valor_mes_anterior = df_anterior[df_anterior["Indicador"] == "Número de transacciones"]["VALE+"].values[0]
+                        elif opcion_seleccionada == "REVAL":
+                            valor_mes_anterior = df_anterior[df_anterior["Indicador"] == "Número de transacciones"]["REVAL"].values[0]
+                        else:
+                            valor_mes_anterior = df_anterior[df_anterior["Indicador"] == "Número de transacciones"]["Total"].values[0]
+                        
+                        st.write(f"Valor mes anterior {opcion_seleccionada}: {valor_mes_anterior:,d}")
+                        var_mes_anterior = calcular_variacion_porcentual(valor_actual, valor_mes_anterior)
+                    else:
+                        var_mes_anterior = 0
+                        st.warning(f"No se encontró información para el mes anterior")
+                    
+                    fig2 = indicador_con_variacion(
+                        valor_actual=valor_actual,
+                        var_mes_anterior=var_mes_anterior,
+                        var_anio_anterior=var_anio_anterior,
+                        titulo=titulo
+                    )
+                    st.plotly_chart(fig2, use_container_width=True, key=f"transacciones_{opcion_seleccionada}")
+                except Exception as e:
+                    st.error(f"Error al procesar transacciones histórico: {str(e)}")
+            else:
+                # Para mes actual (marzo)
+                if opcion_seleccionada == "VALE+":
+                    valor_actual = trx_2024[3]["n_trx_vale"]
+                    titulo = "Transacciones VALE+"
+                    st.write(f"Valor actual VALE+ (marzo): {trx_2024[3]['n_trx_vale']:,d}")
+                elif opcion_seleccionada == "REVAL":
+                    valor_actual = trx_2024[3]["n_trx_reval"]
+                    titulo = "Transacciones REVAL"
+                    st.write(f"Valor actual REVAL (marzo): {trx_2024[3]['n_trx_reval']:,d}")
+                else:
+                    valor_actual = trx_2024[3]["n_trx"]
+                    titulo = "Transacciones"
+                    st.write(f"Valor actual Total (marzo): {trx_2024[3]['n_trx']:,d}")
+
+                try:
+                    fig2 = go.Figure(go.Indicator(
+                        mode="number",
+                        value=valor_actual,
+                        number={'valueformat': ",", 'font': {'size': 50}},
+                        title={'text': titulo, 'font': {'size': 20}},
+                    ))
+                    fig2.update_layout(height=350)
+                    st.plotly_chart(fig2, use_container_width=True, key=f"transacciones_actual_{opcion_seleccionada}")
+                except Exception as e:
+                    st.error("Error al procesar transacciones actual")
 
         with col3:
-            # 📌 Asegurar que los valores sean numéricos
-            monto_total = float(str(monto_total).replace(",", ""))
-            monto_vale = float(str(monto_vale).replace(",", ""))
-            monto_reval = float(str(monto_reval).replace(",", ""))
-            
-            # Obtener el valor de referencia del mes actual
-            mes_actual = datetime.now().month
-            valor_referencia = trx_2024[mes_actual]["monto_total"]
-            
-            # Primero definir valor_mostrar
-            valor_mostrar = {
-                "VALE+": monto_vale,
-                "REVAL": monto_reval,
-                "Total": monto_total
-            }[opcion_seleccionada]
+            try:
+                if es_mes_historico(mes_numero, mes_actual_num):
+                    # 📌 Obtener el valor actual según la opción seleccionada
+                    if opcion_seleccionada == "VALE+":
+                        valor_actual = float(str(monto_vale).replace(',', ''))
+                        valor_2024 = float(str(trx_2024[mes_numero]["monto_vale"]).replace(',', ''))
+                        titulo = "Montos VALE+"
+                    elif opcion_seleccionada == "REVAL":
+                        valor_actual = float(str(monto_reval).replace(',', ''))
+                        valor_2024 = float(str(trx_2024[mes_numero]["monto_reval"]).replace(',', ''))
+                        titulo = "Montos REVAL"
+                    else:  # Total
+                        valor_actual = float(str(monto_total).replace(',', ''))
+                        valor_2024 = float(str(trx_2024[mes_numero]["monto_total"]).replace(',', ''))
+                        titulo = "Montos"
 
-            # Luego abreviar el valor
-            valor_mostrar_abreviado = abreviar_numero(valor_mostrar)
+                    # 📌 Debug con valores separados por miles
+                    st.write(f"Valor actual {opcion_seleccionada} (mes seleccionado): {'{:,.0f}'.format(valor_actual)}")
+                    st.write(f"Valor mismo mes año anterior {opcion_seleccionada}: {'{:,.0f}'.format(valor_2024)}")
 
-            # 📌 Crear gráfico con formato de dinero
-            fig = go.Figure(go.Indicator(
-                mode="number+delta",
-                value=valor_mostrar_abreviado,
-                number={
-                    "prefix": "$",
-                    "suffix": "B" if valor_mostrar >= 1e9 else "M" if valor_mostrar >= 1e6 else "",
-                    "font": {"size": 80}
-                },
-                delta={
-                    "reference": valor_referencia,
-                    "relative": True, 
-                    "valueformat": ".1f%%",
-                    "increasing": {"color": "green"},
-                    "decreasing": {"color": "red"}
-                },
-                title={
-                    "text": f"Monto {opcion_seleccionada}",
-                    "font": {"size": 24}
-                }
-            ))
+                    # 📌 Abreviar valores correctamente
+                    valor_actual_abrev, sufijo_actual = abreviar_numero(valor_actual)
+                    valor_2024_abrev, sufijo_2024 = abreviar_numero(valor_2024)
 
-            # Agregar anotación con el mes de referencia
-            fig.add_annotation(
-                text=f"Referencia: {trx_2024[mes_actual]['mes']} 2024",
-                x=0.5, y=0.1,
-                showarrow=False,
-                font=dict(size=16, color="gray")
-            )
+                    # 📌 Variaciones
+                    var_anio_anterior = calcular_variacion_porcentual(valor_actual, valor_2024)
 
-            st.plotly_chart(fig, use_container_width=True)
+                    # 📌 Obtener el valor del mes anterior si existe
+                    mes_anterior = mes_numero - 1 if mes_numero > 1 else 12
+                    archivo_mes_anterior = obtener_archivo_por_mes(mes_anterior, meses[mes_anterior])
+
+                    if archivo_mes_anterior:
+                        df_anterior = pd.read_excel(archivo_mes_anterior)
+                        columna = opcion_seleccionada if opcion_seleccionada != "Total" else "Total"
+                        valor_mes_anterior = float(str(df_anterior[df_anterior["Indicador"] == "Valor transacciones"][columna].values[0]).replace(',', ''))
+                        valor_mes_anterior_abrev, sufijo_anterior = abreviar_numero(valor_mes_anterior)
+                        var_mes_anterior = calcular_variacion_porcentual(valor_actual, valor_mes_anterior)
+
+                        # 📌 Debug con separadores de miles
+                        st.write(f"Valor mes anterior {opcion_seleccionada}: {'{:,.0f}'.format(valor_mes_anterior)}")
+
+                    else:
+                        var_mes_anterior = 0
+                        st.warning(f"No se encontró información para el mes anterior")
+
+                    # 📌 Gráfico con variaciones
+                    fig3 = indicador_con_variacion(
+                        valor_actual=valor_actual_abrev,  # ✅ Valor abreviado
+                        var_mes_anterior=var_mes_anterior,
+                        var_anio_anterior=var_anio_anterior,
+                        titulo=titulo
+                    )
+
+                    fig3.update_traces(
+                        number={
+                            "prefix": "$",
+                            "valueformat": ".2f",
+                            "suffix": sufijo_actual,  # ✅ Usa el sufijo correcto
+                            "font": {"size": 60}
+                        }
+                    )
+
+                    st.plotly_chart(fig3, use_container_width=True, key=f"montos_{opcion_seleccionada}")
+
+                else:
+                    # 📌 Para mes actual (Marzo), mostrar solo el valor sin debug ni variaciones
+                    if opcion_seleccionada == "VALE+":
+                        valor_actual = float(str(trx_2024[3]["monto_vale"]).replace(',', ''))
+                        titulo = "Montos VALE+"
+                    elif opcion_seleccionada == "REVAL":
+                        valor_actual = float(str(trx_2024[3]["monto_reval"]).replace(',', ''))
+                        titulo = "Montos REVAL"
+                    else:
+                        valor_actual = float(str(trx_2024[3]["monto_total"]).replace(',', ''))
+                        titulo = "Montos"
+
+                    # 📌 Debug con separadores de miles
+                    st.write(f"Valor actual {opcion_seleccionada} (marzo): {'{:,.0f}'.format(valor_actual)}")
+
+                    # 📌 Aplicar la abreviación correctamente
+                    valor_actual_abrev, sufijo_actual = abreviar_numero(valor_actual)
+
+                    fig3 = go.Figure(go.Indicator(
+                        mode="number",
+                        value=valor_actual_abrev,  # ✅ Usa el valor abreviado
+                        number={
+                            'prefix': "$",
+                            'valueformat': ".2f",
+                            'suffix': sufijo_actual,  # ✅ Usa el sufijo correcto
+                            'font': {'size': 50}
+                        },
+                        title={'text': titulo, 'font': {'size': 20}},
+                    ))
+                    fig3.update_layout(height=350)
+                    st.plotly_chart(fig3, use_container_width=True, key=f"montos_actual_{opcion_seleccionada}")
+
+            except Exception as e:
+                st.error(f"❌ Error al procesar montos: {str(e)}")
+
 
         st.markdown("---")
 
@@ -1016,10 +1397,9 @@ if st.session_state.get('authentication_status'):
         with col10:
             # Gauge para Puntos bloqueados - Activos
             puntos_bloqueados_df = df[df["Indicador"] == "Puntos bloqueados - Activos (%)"]["Total"].values[0]
-            puntos_bloqueados_valor = float(str(puntos_bloqueados_df).replace('%', ''))
             
             fig = crear_gauge(
-                valor=puntos_bloqueados_valor,
+                valor=float(str(puntos_bloqueados_df).replace('%', '')),
                 titulo="Puntos bloqueados - Activos",
                 meta=meta_tasa_activacion,  #revisar tasa de activacion
                 rango_max=100
@@ -1083,207 +1463,242 @@ if st.session_state.get('authentication_status'):
             )
 
         try:
-            # Encontrar los archivos más recientes
-            ruta_aperturas = encontrar_archivo_reciente("Resultado", "aperturas_")
-            ruta_cierres = encontrar_archivo_reciente("Resultado", "cierres_")
+            # Construir el nombre del archivo según el mes seleccionado
+            mes_actual = datetime.now().month
+            año_actual = datetime.now().year
+            
+            # Si es mes actual, buscar archivos con formato actual
+            if mes_numero == mes_actual:
+                ruta_aperturas = encontrar_archivo_reciente("Resultado", "aperturas_")
+                ruta_cierres = encontrar_archivo_reciente("Resultado", "cierres_")
+            else:
+                # Para meses anteriores, buscar archivos con formato mes_[NombreMes]
+                nombre_mes = meses[mes_numero].lower()
+                ruta_aperturas = os.path.join("Resultado", f"aperturas_mes_{nombre_mes}_{año_actual}.csv")
+                ruta_cierres = os.path.join("Resultado", f"cierres_mes_{nombre_mes}_{año_actual}.csv")
+            
+            # # Debug prints
+            # st.write(f"🔍 Buscando archivos para mes: {mes_seleccionado} ({mes_numero})")
+            # st.write("📂 Archivo de aperturas buscado:", ruta_aperturas)
+            # st.write("📂 Archivo de cierres buscado:", ruta_cierres)
+
+            # Verificar si los archivos existen
+            if not os.path.exists(ruta_aperturas) or not os.path.exists(ruta_cierres):
+                st.warning(f"⚠️ No se encontraron archivos para el mes {mes_seleccionado}")
+                st.stop()
 
             # Leer los archivos usando las rutas encontradas
             df_base_cierres = pd.read_csv(ruta_cierres)
             df_base_aperturas = pd.read_csv(ruta_aperturas)
+            
+            # # Debug prints para verificar los DataFrames
+            # st.write("📊 Columnas en DataFrame aperturas:", df_base_aperturas.columns.tolist())
+            # st.write("📊 Columnas en DataFrame cierres:", df_base_cierres.columns.tolist())
+            
+            # if not df_base_aperturas.empty:
+            #     st.write("Primeras filas de aperturas:")
+            #     st.write(df_base_aperturas.head(2))
+            
+            # if not df_base_cierres.empty:
+            #     st.write("Primeras filas de cierres:")
+            #     st.write(df_base_cierres.head(2))
+
             df_base_cierres.rename(columns={'Fuerza_Comercial': 'Aliado'}, inplace=True)
             df_base_aperturas.rename(columns={'Fuerza_Comercial': 'Aliado'}, inplace=True)
 
             # Mostrar la fecha de última actualización basada en el archivo de aperturas
             ultima_actualizacion = os.path.getmtime(ruta_aperturas)
-            fecha_actualizacion = pd.to_datetime(ultima_actualizacion, unit='s').strftime("%d/%m/%Y %H:%M:%S")
+            fecha_actualizacion = pd.to_datetime(ultima_actualizacion, unit='s').strftime("%d/%m/%Y")
+            st.write("🕒 Última actualización:", fecha_actualizacion)
 
             # Limpiar los dataframes
             df_base_cierres = limpiar_dataframe(df_base_cierres)
             df_base_aperturas = limpiar_dataframe(df_base_aperturas)
+            
+            # # Debug prints después de la limpieza
+            # st.write("📊 Tamaño DataFrame aperturas después de limpieza:", df_base_aperturas.shape)
+            # st.write("📊 Tamaño DataFrame cierres después de limpieza:", df_base_cierres.shape)
 
-            # Función para crear mapa de puntos
-            def crear_mapa_puntos(df, titulo):
-                # Filtrar por aliado si se seleccionó uno específico
-                if opcion_aliado != 'Todos':
-                    df = df[df['Aliado'] == opcion_aliado]
+        except Exception as e:
+            st.error(f"❌ Error al cargar archivos: {str(e)}")
+            st.write("Detalles del error:", str(e))
 
-                if opcion_mapa == 'Todos':
-                    # Para vista 'Todos', colorear por tipo
-                    fig = px.scatter_map(
-                        df,
-                        lat='Latitud',
-                        lon='Longitud',
-                        hover_data={
-                            'Codigo_Punto': True,
-                            'Aliado': True,
-                            'Tipo': True,
-                            'Latitud': False,
-                            'Longitud': False
-                        },
-                        color='Tipo',
-                        color_discrete_map={
-                            'Apertura': '#00825A',  # Verde para aperturas
-                            'Cierre': '#7d1b18'     # Rojo para cierres
-                        },
-                        zoom=5,
-                        height=600,
-                        title=titulo
-                    )
-                else:
-                    # Para vistas individuales, colorear por aliado
-                    fig = px.scatter_map(
-                        df,
-                        lat='Latitud',
-                        lon='Longitud',
-                        hover_data={
-                            'Codigo_Punto': True,
-                            'Aliado': True,
-                            'Tipo': True,
-                            'Latitud': False,
-                            'Longitud': False
-                        },
-                        color='Aliado',
-                        color_discrete_map={
-                            "VALE+": "#00825A" if opcion_mapa == 'Aperturas' else "#7d1b18",
-                            "REVAL": "#B0F2AE" if opcion_mapa == 'Aperturas' else "#d4150f"
-                        },
-                        zoom=5,
-                        height=600,
-                        title=titulo
-                    )
-                
-                fig.update_layout(
-                    # mapbox_style="carto-positron",
-                    mapbox_style="open-street-map",
-                    mapbox=dict(
-                        center=dict(lat=4.5709, lon=-74.2973),
-                    ),
-                    modebar_remove=["zoomIn", "zoomOut"],  # Mantener solo los controles necesarios
-                    dragmode='pan'  # Permitir arrastrar el mapa
-                )
-                
-                fig.update_traces(
-                    marker=dict(
-                        size=10,
-                        opacity=0.7
-                    ),
-                    selector=dict(mode='markers'),
-                    hovertemplate="<b>Código Punto:</b> %{customdata[0]}<br><b>Aliado:</b> %{customdata[1]}<br><b>Tipo:</b> %{customdata[2]}<br><extra></extra>"
-                )
-                
-                return fig
+        # Función para crear mapa de puntos
+        def crear_mapa_puntos(df, titulo):
+            # Filtrar por aliado si se seleccionó uno específico
+            if opcion_aliado != 'Todos':
+                df = df[df['Aliado'] == opcion_aliado]
 
-            # Función para crear mapa de densidad
-            def crear_mapa_densidad(df, titulo):
-                # Filtrar por aliado si se seleccionó uno específico
-                if opcion_aliado != 'Todos':
-                    df = df[df['Aliado'] == opcion_aliado]
-
-                # Redondear coordenadas para agrupar puntos cercanos (2 decimales para más agrupamiento)
-                df['Latitud_round'] = df['Latitud'].round(2)
-                df['Longitud_round'] = df['Longitud'].round(2)
-
-                # Crear un DataFrame con el conteo de puntos por ubicación
-                density_df = df.groupby(['Latitud_round', 'Longitud_round']).agg({
-                    'Tipo': 'count',
-                    'Latitud': 'first',
-                    'Longitud': 'first'
-                }).reset_index()
-                
-                density_df.rename(columns={'Tipo': 'count'}, inplace=True)
-
-                # Escala de colores fríos a cálidos
-                color_scale = [
-                    [0, '#313695'],    # Azul oscuro
-                    [0.2, '#4575B4'],  # Azul medio
-                    [0.4, '#74ADD1'],  # Azul claro
-                    [0.6, '#FED976'],  # Amarillo
-                    [0.8, '#FD8D3C'],  # Naranja
-                    [1.0, '#BD0026']   # Rojo intenso
-                ]
-
-                # Radio unificado para todas las vistas
-                radius_val = 50  # Aumentado para mejor visualización
-
-                fig = px.density_mapbox(
-                    density_df,
+            if opcion_mapa == 'Todos':
+                # Para vista 'Todos', colorear por tipo
+                fig = px.scatter_map(
+                    df,
                     lat='Latitud',
                     lon='Longitud',
-                    z='count',
-                    radius=radius_val,
+                    hover_data={
+                        'Codigo_Punto': True,
+                        'Aliado': True,
+                        'Tipo': True,
+                        'Latitud': False,
+                        'Longitud': False
+                    },
+                    color='Tipo',
+                    color_discrete_map={
+                        'Apertura': '#00825A',  # Verde para aperturas
+                        'Cierre': '#7d1b18'     # Rojo para cierres
+                    },
                     zoom=5,
                     height=600,
-                    title=titulo,
-                    opacity=0.9,
-                    color_continuous_scale=color_scale
+                    title=titulo
                 )
-
-                fig.update_layout(
-                    mapbox_style="carto-positron",
-                    mapbox=dict(
-                        center=dict(lat=4.5709, lon=-74.2973),
-                    ),
-                    modebar_remove=["zoomIn", "zoomOut"],  # Mantener solo los controles necesarios
-                    dragmode='pan'  # Permitir arrastrar el mapa
+            else:
+                # Para vistas individuales, colorear por aliado
+                fig = px.scatter_map(
+                    df,
+                    lat='Latitud',
+                    lon='Longitud',
+                    hover_data={
+                        'Codigo_Punto': True,
+                        'Aliado': True,
+                        'Tipo': True,
+                        'Latitud': False,
+                        'Longitud': False
+                    },
+                    color='Aliado',
+                    color_discrete_map={
+                        "VALE+": "#00825A" if opcion_mapa == 'Aperturas' else "#7d1b18",
+                        "REVAL": "#B0F2AE" if opcion_mapa == 'Aperturas' else "#d4150f"
+                    },
+                    zoom=5,
+                    height=600,
+                    title=titulo
                 )
-
-                # Ocultar la información del hover
-                fig.update_traces(
-                    hoverinfo='none',
-                    hovertemplate=None
-                )
-
-                return fig
             
-            # Modificar la lógica de visualización del mapa
+            fig.update_layout(
+                # mapbox_style="carto-positron",
+                mapbox_style="open-street-map",
+                mapbox=dict(
+                    center=dict(lat=4.5709, lon=-74.2973),
+                ),
+                modebar_remove=["zoomIn", "zoomOut"],  # Mantener solo los controles necesarios
+                dragmode='pan'  # Permitir arrastrar el mapa
+            )
+            
+            fig.update_traces(
+                marker=dict(
+                    size=10,
+                    opacity=0.7
+                ),
+                selector=dict(mode='markers'),
+                hovertemplate="<b>Código Punto:</b> %{customdata[0]}<br><b>Aliado:</b> %{customdata[1]}<br><b>Tipo:</b> %{customdata[2]}<br><extra></extra>"
+            )
+            
+            return fig
+
+        # Función para crear mapa de densidad
+        def crear_mapa_densidad(df, titulo):
+            # Filtrar por aliado si se seleccionó uno específico
+            if opcion_aliado != 'Todos':
+                df = df[df['Aliado'] == opcion_aliado]
+
+            # Redondear coordenadas para agrupar puntos cercanos (2 decimales para más agrupamiento)
+            df['Latitud_round'] = df['Latitud'].round(2)
+            df['Longitud_round'] = df['Longitud'].round(2)
+
+            # Crear un DataFrame con el conteo de puntos por ubicación
+            density_df = df.groupby(['Latitud_round', 'Longitud_round']).agg({
+                'Tipo': 'count',
+                'Latitud': 'first',
+                'Longitud': 'first'
+            }).reset_index()
+            
+            density_df.rename(columns={'Tipo': 'count'}, inplace=True)
+
+            # Escala de colores fríos a cálidos
+            color_scale = [
+                [0, '#313695'],    # Azul oscuro
+                [0.2, '#4575B4'],  # Azul medio
+                [0.4, '#74ADD1'],  # Azul claro
+                [0.6, '#FED976'],  # Amarillo
+                [0.8, '#FD8D3C'],  # Naranja
+                [1.0, '#BD0026']   # Rojo intenso
+            ]
+
+            # Radio unificado para todas las vistas
+            radius_val = 50  # Aumentado para mejor visualización
+
+            fig = px.density_mapbox(
+                density_df,
+                lat='Latitud',
+                lon='Longitud',
+                z='count',
+                radius=radius_val,
+                zoom=5,
+                height=600,
+                title=titulo,
+                opacity=0.9,
+                color_continuous_scale=color_scale
+            )
+
+            fig.update_layout(
+                mapbox_style="carto-positron",
+                mapbox=dict(
+                    center=dict(lat=4.5709, lon=-74.2973),
+                ),
+                modebar_remove=["zoomIn", "zoomOut"],  # Mantener solo los controles necesarios
+                dragmode='pan'  # Permitir arrastrar el mapa
+            )
+
+            # Ocultar la información del hover
+            fig.update_traces(
+                hoverinfo='none',
+                hovertemplate=None
+            )
+
+            return fig
+        
+        # Modificar la lógica de visualización del mapa
+        if opcion_mapa == 'Todos':
+            # Combinar dataframes de aperturas y cierres
+            df_base_aperturas['Tipo'] = 'Apertura'
+            df_base_cierres['Tipo'] = 'Cierre'
+            df_combinado = pd.concat([df_base_aperturas, df_base_cierres])
+            
+            if tipo_mapa == 'Puntos':
+                mapa = crear_mapa_puntos(df_combinado, 'Distribución de Aperturas y Cierres')
+            else:
+                mapa = crear_mapa_densidad(df_combinado, 'Densidad de Aperturas y Cierres')
+                
+        elif opcion_mapa == 'Aperturas':
+            df_base_aperturas['Tipo'] = 'Apertura'
+            
+            if tipo_mapa == 'Puntos':
+                mapa = crear_mapa_puntos(df_base_aperturas, 'Distribución de Aperturas')
+            else:
+                mapa = crear_mapa_densidad(df_base_aperturas, 'Densidad de Aperturas')
+                
+        else:  # Cierres
+            df_base_cierres['Tipo'] = 'Cierre'
+            
+            if tipo_mapa == 'Puntos':
+                mapa = crear_mapa_puntos(df_base_cierres, 'Distribución de Cierres')
+            else:
+                mapa = crear_mapa_densidad(df_base_cierres, 'Densidad de Cierres')
+
+        st.plotly_chart(mapa, use_container_width=True, config={'scrollZoom': True})
+
+        with col_stats:
+            # Actualizar estadísticas para incluir vista combinada
+            st.markdown("### 📊 Estadísticas")
             if opcion_mapa == 'Todos':
-                # Combinar dataframes de aperturas y cierres
-                df_base_aperturas['Tipo'] = 'Apertura'
-                df_base_cierres['Tipo'] = 'Cierre'
-                df_combinado = pd.concat([df_base_aperturas, df_base_cierres])
-                
-                if tipo_mapa == 'Puntos':
-                    mapa = crear_mapa_puntos(df_combinado, 'Distribución de Aperturas y Cierres')
-                else:
-                    mapa = crear_mapa_densidad(df_combinado, 'Densidad de Aperturas y Cierres')
-                    
+                df_filtered = df_combinado if opcion_aliado == 'Todos' else df_combinado[df_combinado['Aliado'] == opcion_aliado]
+                st.metric("Total de puntos", f"{len(df_filtered):,}")
             elif opcion_mapa == 'Aperturas':
-                df_base_aperturas['Tipo'] = 'Apertura'
-                
-                if tipo_mapa == 'Puntos':
-                    mapa = crear_mapa_puntos(df_base_aperturas, 'Distribución de Aperturas')
-                else:
-                    mapa = crear_mapa_densidad(df_base_aperturas, 'Densidad de Aperturas')
-                    
-            else:  # Cierres
-                df_base_cierres['Tipo'] = 'Cierre'
-                
-                if tipo_mapa == 'Puntos':
-                    mapa = crear_mapa_puntos(df_base_cierres, 'Distribución de Cierres')
-                else:
-                    mapa = crear_mapa_densidad(df_base_cierres, 'Densidad de Cierres')
-
-            st.plotly_chart(mapa, use_container_width=True, config={'scrollZoom': True})
-
-            with col_stats:
-                # Actualizar estadísticas para incluir vista combinada
-                st.markdown("### 📊 Estadísticas")
-                if opcion_mapa == 'Todos':
-                    df_filtered = df_combinado if opcion_aliado == 'Todos' else df_combinado[df_combinado['Aliado'] == opcion_aliado]
-                    st.metric("Total de puntos", f"{len(df_filtered):,}")
-                elif opcion_mapa == 'Aperturas':
-                    df_filtered = df_base_aperturas if opcion_aliado == 'Todos' else df_base_aperturas[df_base_aperturas['Aliado'] == opcion_aliado]
-                    st.metric("Total de aperturas", f"{len(df_filtered):,}")
-                else:
-                    df_filtered = df_base_cierres if opcion_aliado == 'Todos' else df_base_cierres[df_base_cierres['Aliado'] == opcion_aliado]
-                    st.metric("Total de cierres", f"{len(df_filtered):,}")
-
-        except FileNotFoundError:
-            st.error(f"No se encontró el archivo de informe para el mes de {mes_seleccionado}")
-            st.stop()
-        except Exception as e:
-            st.error(f"Error al leer el archivo: {str(e)}")
-            st.stop()
+                df_filtered = df_base_aperturas if opcion_aliado == 'Todos' else df_base_aperturas[df_base_aperturas['Aliado'] == opcion_aliado]
+                st.metric("Total de aperturas", f"{len(df_filtered):,}")
+            else:
+                df_filtered = df_base_cierres if opcion_aliado == 'Todos' else df_base_cierres[df_base_cierres['Aliado'] == opcion_aliado]
+                st.metric("Total de cierres", f"{len(df_filtered):,}")
 
     except Exception as e:
         st.error(f"⚠️ Error al leer el archivo: {e}")
@@ -1291,10 +1706,6 @@ if st.session_state.get('authentication_status'):
     except FileNotFoundError:
         st.error("No se encontró el archivo de informe diario en la carpeta Resultado")
         st.stop()
-    except Exception as e:
-        st.error(f"Error al leer el archivo: {str(e)}")
-        st.stop()
-
 
 
 

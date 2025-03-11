@@ -319,8 +319,8 @@ if st.session_state.get('authentication_status'):
             mes_actual = datetime.now().month
             año_actual = datetime.now().year
             
-            # Debug
-            st.write(f"Buscando archivo para mes {mes_numero} (actual: {mes_actual})")
+            # # Debug
+            # st.write(f"Buscando archivo para mes {mes_numero} (actual: {mes_actual})")
             
             # Si es el mes actual (marzo), buscar el archivo informe_diario más reciente
             if mes_numero == mes_actual:
@@ -607,7 +607,7 @@ if st.session_state.get('authentication_status'):
         meta_productividad = 53
         meta_tamaño_red = 17081
         meta_seguros = 2300 
-        meta_tasa_activacion = 70
+        meta_tasa_activacion = 85
 
         trx_2024 = {
             1: {"mes": "Enero",
@@ -1450,14 +1450,41 @@ if st.session_state.get('authentication_status'):
         col4, col5, col6 = st.columns([1, 1, 1])
 
         with col4:
-            # Gauge para NPS
-            fig = crear_gauge(
-                valor=nps_total,
-                titulo="NPS",
-                meta=meta_nps,
-                rango_max=100
-            )
-            st.plotly_chart(fig, use_container_width=True)
+            if es_mes_historico(mes_numero, mes_actual_num):
+                # Para meses históricos
+                if opcion_seleccionada == "Total":
+                    # Gauge para NPS histórico
+                    fig = crear_gauge(
+                        valor=nps_total,
+                        titulo="NPS",
+                        meta=meta_nps,
+                        rango_max=100
+                    )
+                    st.plotly_chart(fig, use_container_width=True)
+            else:
+                # Para mes actual
+                try:
+                    # Buscar el archivo más reciente
+                    archivos = [f for f in os.listdir("Resultado") 
+                               if f.startswith("informe_diario_") and f.endswith('.xlsx')]
+                    if archivos:
+                        archivo_reciente = max(archivos)
+                        ruta_completa = os.path.join("Resultado", archivo_reciente)
+                        df_actual = pd.read_excel(ruta_completa)
+                        
+                        if opcion_seleccionada == "Total":
+                            nps_actual = float(str(df_actual[df_actual["Indicador"] == "NPS"]["Total"].values[0]).replace('%', ''))
+                            
+                            # Gauge para NPS actual
+                            fig = crear_gauge(
+                                valor=nps_total,
+                                titulo="NPS",
+                                meta=meta_nps,
+                                rango_max=100
+                            )
+                            st.plotly_chart(fig, use_container_width=True)
+                except Exception as e:
+                    st.error(f"Error al procesar NPS actual: {str(e)}")
 
         with col5:
             # Gauge para ICX

@@ -789,7 +789,7 @@ if st.session_state.get('authentication_status'):
                     }
                 },
                 showlegend=True,
-                legend=dict(orientation="h", yanchor="bottom", y=-0.2, xanchor="center", x=0.5),
+                legend=dict(orientation="h", yanchor="bottom", y=-0.2, xanchor="center", x=0.5, traceorder="reversed"),
                 margin=dict(t=50, b=50, l=20, r=20)
             )
             
@@ -1524,23 +1524,33 @@ if st.session_state.get('authentication_status'):
             df_base_cierres = pd.read_csv(ruta_cierres)
             df_base_aperturas = pd.read_csv(ruta_aperturas)
 
-            # Resto del código...
+            # # Debug: mostrar columnas antes del rename
+            # st.write("Columnas antes del rename:")
+            # st.write("Aperturas:", df_base_aperturas.columns.tolist())
+            # st.write("Cierres:", df_base_cierres.columns.tolist())
+
+            # Renombrar la columna 'Fuerza_Comercial' a 'Aliado' en ambos DataFrames
+            if 'Fuerza_Comercial' in df_base_cierres.columns:
+                df_base_cierres = df_base_cierres.rename(columns={'Fuerza_Comercial': 'Aliado'})
+            if 'Fuerza_Comercial' in df_base_aperturas.columns:
+                df_base_aperturas = df_base_aperturas.rename(columns={'Fuerza_Comercial': 'Aliado'})
+
+            # # Debug: mostrar columnas después del rename
+            # st.write("Columnas después del rename:")
+            # st.write("Aperturas:", df_base_aperturas.columns.tolist())
+            # st.write("Cierres:", df_base_cierres.columns.tolist())
+
+            # Agregar columna de tipo
+            df_base_aperturas['Tipo'] = 'Apertura'
+            df_base_cierres['Tipo'] = 'Cierre'
+
+            # Limpiar los dataframes
+            df_base_cierres = limpiar_dataframe(df_base_cierres)
+            df_base_aperturas = limpiar_dataframe(df_base_aperturas)
 
         except Exception as e:
-            st.error(f"❌ Error al cargar archivos: {str(e)}")
+            st.error(f"❌ Error al procesar archivos: {str(e)}")
             st.write("Detalles del error:", str(e))
-            
-            # Mostrar información de diagnóstico
-            st.write("\nInformación de diagnóstico:")
-            st.write(f"Mes seleccionado: {mes_seleccionado}")
-            st.write(f"Número de mes: {mes_numero}")
-            st.write(f"Mes actual: {mes_actual}")
-            st.write(f"Año actual: {año_actual}")
-            st.write("\nArchivos en directorio Resultado:")
-            try:
-                st.write(os.listdir("Resultado"))
-            except Exception as e:
-                st.write(f"Error al listar directorio: {str(e)}")
 
         # Función para crear mapa de puntos
         def crear_mapa_puntos(df, titulo):

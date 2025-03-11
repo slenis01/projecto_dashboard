@@ -1477,8 +1477,8 @@ if st.session_state.get('authentication_status'):
             año_actual = datetime.now().year
             nombre_mes = meses[mes_numero].lower()
             
-            # Debug para verificar
-            st.write(f"Buscando archivos para mes: {nombre_mes} (número: {mes_numero})")
+            # # Debug para verificar
+            # st.write(f"Buscando archivos para mes: {nombre_mes} (número: {mes_numero})")
             
             # Si es mes actual, buscar archivos con formato actual
             if mes_numero == mes_actual:
@@ -1502,10 +1502,10 @@ if st.session_state.get('authentication_status'):
                     if archivos_cierres:
                         ruta_cierres = os.path.join("Resultado", max(archivos_cierres))
             
-            # Debug: mostrar las rutas encontradas
-            st.write("Archivos encontrados:")
-            st.write(f"- Aperturas: {ruta_aperturas}")
-            st.write(f"- Cierres: {ruta_cierres}")
+            # # Debug: mostrar las rutas encontradas
+            # st.write("Archivos encontrados:")
+            # st.write(f"- Aperturas: {ruta_aperturas}")
+            # st.write(f"- Cierres: {ruta_cierres}")
 
             # Verificar si los archivos existen
             if not os.path.exists(ruta_aperturas) or not os.path.exists(ruta_cierres):

@@ -278,7 +278,7 @@ if st.session_state.get('authentication_status'):
     with col_filter_type:
         opcion_seleccionada = st.selectbox(
             "Selecciona el tipo de dato:",
-            ["VALE+", "REVAL", "Total"]
+            ["Total", "VALE+", "REVAL"]
         )
 
     with col_filter_month:

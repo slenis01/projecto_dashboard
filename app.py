@@ -250,9 +250,9 @@ if st.session_state.get('authentication_status'):
             # Usar ruta absoluta
             ruta_absoluta = os.path.join(BASE_PATH, directorio)
             
-            # Debug para verificar rutas
-            st.write(f"Buscando en: {ruta_absoluta}")
-            st.write(f"Buscando archivos con prefijo: {prefijo}")
+            # # Debug para verificar rutas
+            # st.write(f"Buscando en: {ruta_absoluta}")
+            # st.write(f"Buscando archivos con prefijo: {prefijo}")
             
             if not os.path.exists(ruta_absoluta):
                 st.error(f"Directorio no encontrado: {ruta_absoluta}")
@@ -316,8 +316,8 @@ if st.session_state.get('authentication_status'):
 
     def obtener_archivo_por_mes(mes_numero, mes_nombre):
         try:
-            # Debug: mostrar qué estamos buscando
-            st.write(f"Buscando archivo para mes: {mes_nombre} (número: {mes_numero})")
+            # # Debug: mostrar qué estamos buscando
+            # st.write(f"Buscando archivo para mes: {mes_nombre} (número: {mes_numero})")
             
             año_actual = datetime.now().year
             mes_lower = mes_nombre.lower()
@@ -334,14 +334,14 @@ if st.session_state.get('authentication_status'):
             
             # Buscar en la carpeta Resultado
             for archivo in os.listdir("Resultado"):
-                # Debug: mostrar cada archivo encontrado
-                st.write(f"Revisando archivo: {archivo}")
+                # # Debug: mostrar cada archivo encontrado
+                # st.write(f"Revisando archivo: {archivo}")
                 
                 # Verificar si alguno de los patrones coincide
                 for patron in patrones:
                     if archivo.lower().startswith(patron.lower()) and (archivo.endswith('.xlsx') or archivo.endswith('.xls')):
                         ruta_completa = os.path.join("Resultado", archivo)
-                        st.write(f"¡Archivo encontrado!: {ruta_completa}")
+                        # st.write(f"¡Archivo encontrado!: {ruta_completa}")
                         return ruta_completa
             
             # Si no se encontró ningún archivo
@@ -353,18 +353,18 @@ if st.session_state.get('authentication_status'):
             st.write("Detalles del error:", str(e))
             return None
 
-    # Función auxiliar para listar todos los archivos en el directorio
-    def mostrar_archivos_disponibles():
-        st.write("Archivos disponibles en el directorio Resultado:")
-        try:
-            archivos = os.listdir("Resultado")
-            for archivo in archivos:
-                st.write(f"- {archivo}")
-        except Exception as e:
-            st.error(f"Error al listar archivos: {str(e)}")
+    # # Función auxiliar para listar todos los archivos en el directorio
+    # def mostrar_archivos_disponibles():
+    #     st.write("Archivos disponibles en el directorio Resultado:")
+    #     try:
+    #         archivos = os.listdir("Resultado")
+    #         for archivo in archivos:
+    #             st.write(f"- {archivo}")
+    #     except Exception as e:
+    #         st.error(f"Error al listar archivos: {str(e)}")
 
-    # Llamar a la función auxiliar antes de buscar el archivo
-    mostrar_archivos_disponibles()
+    # # Llamar a la función auxiliar antes de buscar el archivo
+    # mostrar_archivos_disponibles()
 
     def obtener_datos_mes_anterior(mes_numero, año_actual):
         """
@@ -381,8 +381,8 @@ if st.session_state.get('authentication_status'):
                 
             mes_anterior_nombre = meses[mes_anterior].lower()
             
-            # Debug
-            st.write(f"Buscando datos del mes anterior: {mes_anterior_nombre} {año_anterior}")
+            # # Debug
+            # st.write(f"Buscando datos del mes anterior: {mes_anterior_nombre} {año_anterior}")
             
             # Intentar obtener archivo del mes anterior
             archivo_anterior = obtener_archivo_por_mes(mes_anterior, meses[mes_anterior])
@@ -1475,68 +1475,84 @@ if st.session_state.get('authentication_status'):
             # Construir el nombre del archivo según el mes seleccionado
             mes_actual = datetime.now().month
             año_actual = datetime.now().year
+            nombre_mes = meses[mes_numero].lower()
+            
+            # Debug para verificar
+            st.write(f"Buscando archivos para mes: {nombre_mes} (número: {mes_numero})")
             
             # Si es mes actual, buscar archivos con formato actual
             if mes_numero == mes_actual:
                 ruta_aperturas = encontrar_archivo_reciente("Resultado", "aperturas_")
                 ruta_cierres = encontrar_archivo_reciente("Resultado", "cierres_")
             else:
-                # Para meses anteriores, buscar archivos con formato mes_[NombreMes]
-                nombre_mes = meses[mes_numero].lower()
+                # Para meses anteriores, buscar primero en el formato mes_[MES]
                 ruta_aperturas = os.path.join("Resultado", f"aperturas_mes_{nombre_mes}_{año_actual}.csv")
                 ruta_cierres = os.path.join("Resultado", f"cierres_mes_{nombre_mes}_{año_actual}.csv")
+                
+                # Si no encuentra, buscar en el formato antiguo
+                if not os.path.exists(ruta_aperturas) or not os.path.exists(ruta_cierres):
+                    # Intentar encontrar cualquier archivo que coincida con el patrón del mes
+                    archivos_aperturas = [f for f in os.listdir("Resultado") 
+                                        if f.startswith(f"aperturas_") and nombre_mes in f.lower()]
+                    archivos_cierres = [f for f in os.listdir("Resultado") 
+                                      if f.startswith(f"cierres_") and nombre_mes in f.lower()]
+                    
+                    if archivos_aperturas:
+                        ruta_aperturas = os.path.join("Resultado", max(archivos_aperturas))
+                    if archivos_cierres:
+                        ruta_cierres = os.path.join("Resultado", max(archivos_cierres))
             
-            # # Debug prints
-            # st.write(f"🔍 Buscando archivos para mes: {mes_seleccionado} ({mes_numero})")
-            # st.write("📂 Archivo de aperturas buscado:", ruta_aperturas)
-            # st.write("📂 Archivo de cierres buscado:", ruta_cierres)
+            # Debug: mostrar las rutas encontradas
+            st.write("Archivos encontrados:")
+            st.write(f"- Aperturas: {ruta_aperturas}")
+            st.write(f"- Cierres: {ruta_cierres}")
 
             # Verificar si los archivos existen
             if not os.path.exists(ruta_aperturas) or not os.path.exists(ruta_cierres):
                 st.warning(f"⚠️ No se encontraron archivos para el mes {mes_seleccionado}")
+                
+                # Mostrar los archivos disponibles para diagnóstico
+                st.write("Archivos disponibles en el directorio:")
+                archivos_disponibles = [f for f in os.listdir("Resultado") 
+                                      if f.startswith(("aperturas", "cierres"))]
+                for archivo in sorted(archivos_disponibles):
+                    st.write(f"- {archivo}")
+                    
                 st.stop()
 
-            # Leer los archivos usando las rutas encontradas
+            # Leer los archivos
             df_base_cierres = pd.read_csv(ruta_cierres)
             df_base_aperturas = pd.read_csv(ruta_aperturas)
-            
-            # # Debug prints para verificar los DataFrames
-            # st.write("📊 Columnas en DataFrame aperturas:", df_base_aperturas.columns.tolist())
-            # st.write("📊 Columnas en DataFrame cierres:", df_base_cierres.columns.tolist())
-            
-            # if not df_base_aperturas.empty:
-            #     st.write("Primeras filas de aperturas:")
-            #     st.write(df_base_aperturas.head(2))
-            
-            # if not df_base_cierres.empty:
-            #     st.write("Primeras filas de cierres:")
-            #     st.write(df_base_cierres.head(2))
 
-            df_base_cierres.rename(columns={'Fuerza_Comercial': 'Aliado'}, inplace=True)
-            df_base_aperturas.rename(columns={'Fuerza_Comercial': 'Aliado'}, inplace=True)
-
-            # Mostrar la fecha de última actualización basada en el archivo de aperturas
-            ultima_actualizacion = os.path.getmtime(ruta_aperturas)
-            fecha_actualizacion = pd.to_datetime(ultima_actualizacion, unit='s').strftime("%d/%m/%Y")
-            st.write("🕒 Última actualización:", fecha_actualizacion)
-
-            # Limpiar los dataframes
-            df_base_cierres = limpiar_dataframe(df_base_cierres)
-            df_base_aperturas = limpiar_dataframe(df_base_aperturas)
-            
-            # # Debug prints después de la limpieza
-            # st.write("📊 Tamaño DataFrame aperturas después de limpieza:", df_base_aperturas.shape)
-            # st.write("📊 Tamaño DataFrame cierres después de limpieza:", df_base_cierres.shape)
+            # Resto del código...
 
         except Exception as e:
             st.error(f"❌ Error al cargar archivos: {str(e)}")
             st.write("Detalles del error:", str(e))
+            
+            # Mostrar información de diagnóstico
+            st.write("\nInformación de diagnóstico:")
+            st.write(f"Mes seleccionado: {mes_seleccionado}")
+            st.write(f"Número de mes: {mes_numero}")
+            st.write(f"Mes actual: {mes_actual}")
+            st.write(f"Año actual: {año_actual}")
+            st.write("\nArchivos en directorio Resultado:")
+            try:
+                st.write(os.listdir("Resultado"))
+            except Exception as e:
+                st.write(f"Error al listar directorio: {str(e)}")
 
         # Función para crear mapa de puntos
         def crear_mapa_puntos(df, titulo):
+            """
+            Crea un mapa de puntos con los datos proporcionados
+            """
+            # Verificar el nombre de la columna antes de filtrar
+            columna_fuerza = 'Fuerza_Comercial' if 'Fuerza_Comercial' in df.columns else 'Aliado'
+            
             # Filtrar por aliado si se seleccionó uno específico
             if opcion_aliado != 'Todos':
-                df = df[df['Aliado'] == opcion_aliado]
+                df = df[df[columna_fuerza] == opcion_aliado]
 
             if opcion_mapa == 'Todos':
                 # Para vista 'Todos', colorear por tipo
@@ -1546,7 +1562,7 @@ if st.session_state.get('authentication_status'):
                     lon='Longitud',
                     hover_data={
                         'Codigo_Punto': True,
-                        'Aliado': True,
+                        columna_fuerza: True,
                         'Tipo': True,
                         'Latitud': False,
                         'Longitud': False
@@ -1568,12 +1584,12 @@ if st.session_state.get('authentication_status'):
                     lon='Longitud',
                     hover_data={
                         'Codigo_Punto': True,
-                        'Aliado': True,
+                        columna_fuerza: True,
                         'Tipo': True,
                         'Latitud': False,
                         'Longitud': False
                     },
-                    color='Aliado',
+                    color=columna_fuerza,
                     color_discrete_map={
                         "VALE+": "#00825A" if opcion_mapa == 'Aperturas' else "#7d1b18",
                         "REVAL": "#B0F2AE" if opcion_mapa == 'Aperturas' else "#d4150f"
@@ -1584,13 +1600,12 @@ if st.session_state.get('authentication_status'):
                 )
             
             fig.update_layout(
-                # mapbox_style="carto-positron",
                 mapbox_style="open-street-map",
                 mapbox=dict(
                     center=dict(lat=4.5709, lon=-74.2973),
                 ),
-                modebar_remove=["zoomIn", "zoomOut"],  # Mantener solo los controles necesarios
-                dragmode='pan'  # Permitir arrastrar el mapa
+                modebar_remove=["zoomIn", "zoomOut"],
+                dragmode='pan'
             )
             
             fig.update_traces(
@@ -1599,7 +1614,12 @@ if st.session_state.get('authentication_status'):
                     opacity=0.7
                 ),
                 selector=dict(mode='markers'),
-                hovertemplate="<b>Código Punto:</b> %{customdata[0]}<br><b>Aliado:</b> %{customdata[1]}<br><b>Tipo:</b> %{customdata[2]}<br><extra></extra>"
+                hovertemplate=(
+                    f"<b>Código Punto:</b> %{{customdata[0]}}<br>"
+                    f"<b>Fuerza Comercial:</b> %{{customdata[1]}}<br>"
+                    f"<b>Tipo:</b> %{{customdata[2]}}<br>"
+                    f"<extra></extra>"
+                )
             )
             
             return fig

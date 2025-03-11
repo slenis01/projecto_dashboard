@@ -316,20 +316,29 @@ if st.session_state.get('authentication_status'):
 
     def obtener_archivo_por_mes(mes_numero, mes_nombre):
         try:
-            # # Debug: mostrar qué estamos buscando
-            # st.write(f"Buscando archivo para mes: {mes_nombre} (número: {mes_numero})")
-            
+            mes_actual = datetime.now().month
             año_actual = datetime.now().year
-            mes_lower = mes_nombre.lower()
             
-            # Construir patrones de búsqueda más flexibles
+            # Debug
+            st.write(f"Buscando archivo para mes {mes_numero} (actual: {mes_actual})")
+            
+            # Si es el mes actual (marzo), buscar el archivo informe_diario más reciente
+            if mes_numero == mes_actual:
+                archivos = [f for f in os.listdir("Resultado") 
+                           if f.startswith("informe_diario_") and f.endswith('.xlsx')]
+                if archivos:
+                    archivo_reciente = max(archivos)  # Obtiene el archivo más reciente
+                    ruta_completa = os.path.join("Resultado", archivo_reciente)
+                    st.write(f"Usando archivo reciente: {ruta_completa}")
+                    return ruta_completa
+            
+            # Para meses anteriores, mantener la lógica existente
+            mes_lower = mes_nombre.lower()
             patrones = [
-                f"informe_mensual_{mes_lower}_{año_actual}",      # informe_mensual_enero_2025
-                f"informe_mensual_{mes_lower}_{año_actual-1}",    # informe_mensual_enero_2024
-                f"informe_diario_{año_actual}{mes_numero:02d}",   # informe_diario_202501
-                f"informe_mensual_{mes_lower}",                   # informe_mensual_enero
-                f"informe_{mes_lower}_{año_actual}",              # informe_enero_2025
-                f"informe_{mes_lower}"                            # informe_enero
+                f"informe_mensual_{mes_lower}_{año_actual}",
+                f"informe_mensual_{mes_lower}_{año_actual-1}",
+                f"informe_{mes_lower}_{año_actual}",
+                f"informe_{mes_lower}"
             ]
             
             # Buscar en la carpeta Resultado
@@ -399,28 +408,122 @@ if st.session_state.get('authentication_status'):
             return None
 
     try:
-        # Obtener la ruta del archivo según el mes seleccionado
-        archivo_path = obtener_archivo_por_mes(mes_numero, mes_seleccionado)
+        # Obtener mes actual y verificar si estamos en el mes actual
+        mes_actual = datetime.now().month
+        
+        if mes_numero == mes_actual:
+            # Buscar el informe diario más reciente
+            archivos_diarios = [f for f in os.listdir("Resultado") 
+                              if f.startswith("informe_diario_") and f.endswith('.xlsx')]
+            if not archivos_diarios:
+                st.error("No se encontró informe diario para el mes actual")
+                st.stop()
+            
+            # Obtener el más reciente
+            archivo_reciente = max(archivos_diarios)
+            archivo_path = os.path.join("Resultado", archivo_reciente)
+            # st.write(f"📊 Leyendo datos del informe diario: {archivo_reciente}")
+            
+            # Leer el archivo
+            df = pd.read_excel(archivo_path)
+            df.columns = ["Indicador", "REVAL", "VALE+", "Total"]
+            
+            # # Debug para verificar
+            # st.write("Valores del informe diario:")
+            # st.write(f"Tamaño de red: {df[df['Indicador'] == 'Cantidad de puntos']['Total'].values[0]}")
+            # st.write(f"Transacciones: {df[df['Indicador'] == 'Número de transacciones']['Total'].values[0]}")
+            # st.write(f"Montos: {df[df['Indicador'] == 'Valor transacciones']['Total'].values[0]}")
+            
+        else:
+            # Para meses históricos, usar la lógica existente
+            archivo_path = obtener_archivo_por_mes(mes_numero, mes_seleccionado)
+            if archivo_path:
+                df = pd.read_excel(archivo_path)
+                df.columns = ["Indicador", "REVAL", "VALE+", "Total"]
+    
+        # A partir de aquí, TODOS los valores se toman del DataFrame 'df'
+        # Ya sea del informe diario o del archivo histórico
+        
+        # Extraer valores del DataFrame
+        cantidad_total = df[df["Indicador"] == "Cantidad de puntos"]["Total"].values[0]
+        cantidad_vale = df[df["Indicador"] == "Cantidad de puntos"]["VALE+"].values[0]
+        cantidad_reval = df[df["Indicador"] == "Cantidad de puntos"]["REVAL"].values[0]
+        
+        n_trx_total = df[df["Indicador"] == "Número de transacciones"]["Total"].values[0]
+        n_trx_vale = df[df["Indicador"] == "Número de transacciones"]["VALE+"].values[0]
+        n_trx_reval = df[df["Indicador"] == "Número de transacciones"]["REVAL"].values[0]
+        
+        monto_total = df[df["Indicador"] == "Valor transacciones"]["Total"].values[0]
+        monto_vale = df[df["Indicador"] == "Valor transacciones"]["VALE+"].values[0]
+        monto_reval = df[df["Indicador"] == "Valor transacciones"]["REVAL"].values[0]
+        
+        # Otros indicadores
+        nps_total = float(str(df[df["Indicador"] == "NPS"]["Total"].values[0]).replace('%', ''))
+        icx_total = df[df["Indicador"] == "ICX"]["Total"].values[0]
+        productividad_total = float(str(df[df["Indicador"] == "Productividad - Cumple meta (%)"]["Total"].values[0]).replace('%', ''))
+        mala_practica_total = float(str(df[df["Indicador"] == "Puntos con malas prácticas (%)"]["Total"].values[0]).replace('%', ''))
+        
+        # IMPORTANTE: Comentar o eliminar completamente el diccionario trx_2024
+        # trx_2024 = {...}  # ELIMINAR O COMENTAR
+        
+    except Exception as e:
+        st.error(f"Error al procesar archivo: {str(e)}")
+        st.write("Detalles del error:", str(e))
+        st.stop()
+
+    try:
+        # Obtener mes actual
+        mes_actual = datetime.now().month
+        
+        if mes_numero == mes_actual:
+            # Para marzo (mes actual), buscar el informe diario más reciente
+            archivos_diarios = [f for f in os.listdir("Resultado") 
+                              if f.startswith("informe_diario_") and f.endswith('.xlsx')]
+            if not archivos_diarios:
+                st.error("No se encontró informe diario para el mes actual")
+                st.stop()
+                
+            archivo_reciente = max(archivos_diarios)
+            archivo_path = os.path.join("Resultado", archivo_reciente)
+            st.write(f"📊 Usando informe diario: {archivo_reciente}")
+        else:
+            # Para otros meses, usar la lógica existente
+            archivo_path = obtener_archivo_por_mes(mes_numero, mes_seleccionado)
         
         if archivo_path is None:
-            # Mostrar mensaje de error amigable y deshabilitar la selección
             st.error(f"⚠️ Los datos para {mes_seleccionado} aún no están disponibles.")
             st.info("👉 Por favor seleccione otro mes disponible.")
-            st.stop()  # Detener la ejecución aquí
+            st.stop()
         
-        # Si llegamos aquí, el archivo existe
+        # Leer el archivo
         df = pd.read_excel(archivo_path)
         
-        # Opcional: mostrar qué archivo se está usando
-        st.caption(f"📊 Mostrando datos de: {os.path.basename(archivo_path)}")
-        
-        # Si el nombre del archivo no incluye el mes, puedes filtrar los datos después de leerlos
-        if 'Fecha' in df.columns:  # Si tienes una columna de fecha
-            df['Fecha'] = pd.to_datetime(df['Fecha'])
-            df = df[df['Fecha'].dt.month == mes_numero]
-        
-        # 📌 Renombrar columnas para evitar problemas de espacios
+        # Renombrar columnas
         df.columns = ["Indicador", "REVAL", "VALE+", "Total"]
+        
+        # Extraer valores del DataFrame actual (no del diccionario trx_2024)
+        cantidad_total = df[df["Indicador"] == "Cantidad de puntos"]["Total"].values[0]
+        cantidad_vale = df[df["Indicador"] == "Cantidad de puntos"]["VALE+"].values[0]
+        cantidad_reval = df[df["Indicador"] == "Cantidad de puntos"]["REVAL"].values[0]
+        
+        n_trx_total = df[df["Indicador"] == "Número de transacciones"]["Total"].values[0]
+        n_trx_vale = df[df["Indicador"] == "Número de transacciones"]["VALE+"].values[0]
+        n_trx_reval = df[df["Indicador"] == "Número de transacciones"]["REVAL"].values[0]
+        
+        monto_total = df[df["Indicador"] == "Valor transacciones"]["Total"].values[0]
+        monto_vale = df[df["Indicador"] == "Valor transacciones"]["VALE+"].values[0]
+        monto_reval = df[df["Indicador"] == "Valor transacciones"]["REVAL"].values[0]
+        
+        # # Debug: mostrar valores leídos
+        # st.write("Valores leídos del archivo:")
+        # st.write(f"Tamaño de red total: {format(cantidad_total, ',d')}")
+        # st.write(f"Número de transacciones total: {format(n_trx_total, ',d')}")
+        # st.write(f"Valor transacciones total: {format(monto_total, ',.2f')}")
+        
+        # El resto de las variables se extraen igual del DataFrame actual
+        
+        # Eliminar o comentar la sección donde se usan los datos de trx_2024
+        # Ya no necesitamos usar el diccionario trx_2024 para el mes actual
 
         # 📌 Extraer valores específicos
         # Tamaño de red
@@ -1084,29 +1187,53 @@ if st.session_state.get('authentication_status'):
                 except Exception as e:
                     st.error(f"Error al procesar tamaño de red histórico: {str(e)}")
             else:
-                # Para mes actual (marzo)
-                if opcion_seleccionada == "VALE+":
-                    valor_actual = trx_2024[3]["tamano_vale"]
-                    titulo = "Tamaño de Red VALE+"
-                    st.write(f"Valor actual VALE+ (marzo): {valor_actual:,d}")
-                elif opcion_seleccionada == "REVAL":
-                    valor_actual = trx_2024[3]["tamano_reval"]
-                    titulo = "Tamaño de Red REVAL"
-                    st.write(f"Valor actual REVAL (marzo): {valor_actual:,d}")
-                else:
-                    valor_actual = trx_2024[3]["tamano_red"]
-                    titulo = "Tamaño de Red"
-                    st.write(f"Valor actual Total (marzo): {valor_actual:,d}")
+                # # Para mes actual (marzo)
+                # if opcion_seleccionada == "VALE+":
+                #     valor_actual = trx_2024[3]["tamano_vale"]
+                #     titulo = "Tamaño de Red VALE+"
+                #     st.write(f"Valor actual VALE+ (marzo): {valor_actual:,d}")
+                # elif opcion_seleccionada == "REVAL":
+                #     valor_actual = trx_2024[3]["tamano_reval"]
+                #     titulo = "Tamaño de Red REVAL"
+                #     st.write(f"Valor actual REVAL (marzo): {valor_actual:,d}")
+                # else:
+                #     valor_actual = trx_2024[3]["tamano_red"]
+                #     titulo = "Tamaño de Red"
+                #     st.write(f"Valor actual Total (marzo): {valor_actual:,d}")
 
                 try:
-                    fig1 = go.Figure(go.Indicator(
-                        mode="number",
-                        value=valor_actual,
-                        number={'valueformat': ",", 'font': {'size': 50}},
-                        title={'text': titulo, 'font': {'size': 20}},
-                    ))
-                    fig1.update_layout(height=350)
-                    st.plotly_chart(fig1, use_container_width=True, key=f"tamaño_red_actual_{opcion_seleccionada}")
+                    # Buscar el archivo más reciente
+                    archivos = [f for f in os.listdir("Resultado") 
+                               if f.startswith("informe_diario_") and f.endswith('.xlsx')]
+                    if archivos:
+                        archivo_reciente = max(archivos)
+                        ruta_completa = os.path.join("Resultado", archivo_reciente)
+                        df_actual = pd.read_excel(ruta_completa)
+                        
+                        # Obtener valores del informe diario
+                        if opcion_seleccionada == "VALE+":
+                            valor_actual = df_actual[df_actual["Indicador"] == "Cantidad de puntos"]["VALE+"].values[0]
+                            titulo = "Tamaño de Red VALE+"
+                        elif opcion_seleccionada == "REVAL":
+                            valor_actual = df_actual[df_actual["Indicador"] == "Cantidad de puntos"]["REVAL"].values[0]
+                            titulo = "Tamaño de Red REVAL"
+                        else:
+                            valor_actual = df_actual[df_actual["Indicador"] == "Cantidad de puntos"]["Total"].values[0]
+                            titulo = "Tamaño de Red"
+                        
+                        # Debug
+                        st.write(f"Valor actual {opcion_seleccionada} (informe diario): {valor_actual:,d}")
+                        
+                        # Crear el gráfico con los datos actuales
+                        fig1 = go.Figure(go.Indicator(
+                            mode="number",
+                            value=valor_actual,
+                            number={'valueformat': ",", 'font': {'size': 50}},
+                            title={'text': titulo, 'font': {'size': 20}},
+                        ))
+                        fig1.update_layout(height=350)
+                        st.plotly_chart(fig1, use_container_width=True)
+                        
                 except Exception as e:
                     st.error(f"Error al procesar tamaño de red actual: {str(e)}")
 
@@ -1166,130 +1293,155 @@ if st.session_state.get('authentication_status'):
                     st.error(f"Error al procesar transacciones histórico: {str(e)}")
             else:
                 # Para mes actual (marzo)
-                if opcion_seleccionada == "VALE+":
-                    valor_actual = trx_2024[3]["n_trx_vale"]
-                    titulo = "Transacciones VALE+"
-                    st.write(f"Valor actual VALE+ (marzo): {trx_2024[3]['n_trx_vale']:,d}")
-                elif opcion_seleccionada == "REVAL":
-                    valor_actual = trx_2024[3]["n_trx_reval"]
-                    titulo = "Transacciones REVAL"
-                    st.write(f"Valor actual REVAL (marzo): {trx_2024[3]['n_trx_reval']:,d}")
-                else:
-                    valor_actual = trx_2024[3]["n_trx"]
-                    titulo = "Transacciones"
-                    st.write(f"Valor actual Total (marzo): {trx_2024[3]['n_trx']:,d}")
+                # if opcion_seleccionada == "VALE+":
+                #     valor_actual = trx_2024[3]["n_trx_vale"]
+                #     titulo = "Transacciones VALE+"
+                #     st.write(f"Valor actual VALE+ (marzo): {trx_2024[3]['n_trx_vale']:,d}")
+                # elif opcion_seleccionada == "REVAL":
+                #     valor_actual = trx_2024[3]["n_trx_reval"]
+                #     titulo = "Transacciones REVAL"
+                #     st.write(f"Valor actual REVAL (marzo): {trx_2024[3]['n_trx_reval']:,d}")
+                # else:
+                #     valor_actual = trx_2024[3]["n_trx"]
+                #     titulo = "Transacciones"
+                #     st.write(f"Valor actual Total (marzo): {trx_2024[3]['n_trx']:,d}")
 
                 try:
-                    fig2 = go.Figure(go.Indicator(
-                        mode="number",
-                        value=valor_actual,
-                        number={'valueformat': ",", 'font': {'size': 50}},
-                        title={'text': titulo, 'font': {'size': 20}},
-                    ))
-                    fig2.update_layout(height=350)
-                    st.plotly_chart(fig2, use_container_width=True, key=f"transacciones_actual_{opcion_seleccionada}")
+                    # Buscar el archivo más reciente
+                    archivos = [f for f in os.listdir("Resultado") 
+                               if f.startswith("informe_diario_") and f.endswith('.xlsx')]
+                    if archivos:
+                        archivo_reciente = max(archivos)
+                        ruta_completa = os.path.join("Resultado", archivo_reciente)
+                        df_actual = pd.read_excel(ruta_completa)
+                        
+                        # Obtener valores del informe diario
+                        if opcion_seleccionada == "VALE+":
+                            valor_actual = df_actual[df_actual["Indicador"] == "Número de transacciones"]["VALE+"].values[0]
+                            titulo = "Transacciones VALE+"
+                        elif opcion_seleccionada == "REVAL":
+                            valor_actual = df_actual[df_actual["Indicador"] == "Número de transacciones"]["REVAL"].values[0]
+                            titulo = "Transacciones REVAL"
+                        else:
+                            valor_actual = df_actual[df_actual["Indicador"] == "Número de transacciones"]["Total"].values[0]
+                            titulo = "Transacciones"
+                        
+                        # Debug
+                        st.write(f"Valor actual {opcion_seleccionada} (informe diario): {valor_actual:,d}")
+                        
+                        # Crear el gráfico con los datos actuales
+                        fig2 = go.Figure(go.Indicator(
+                            mode="number",
+                            value=valor_actual,
+                            number={'valueformat': ",", 'font': {'size': 50}},
+                            title={'text': titulo, 'font': {'size': 20}},
+                        ))
+                        fig2.update_layout(height=350)
+                        st.plotly_chart(fig2, use_container_width=True)
                 except Exception as e:
-                    st.error("Error al procesar transacciones actual")
+                    st.error(f"Error al procesar transacciones actuales: {str(e)}")
+
+
 
         with col3:
-            try:
-                if es_mes_historico(mes_numero, mes_actual_num):
-                    # 📌 Obtener el valor actual según la opción seleccionada
-                    if opcion_seleccionada == "VALE+":
-                        valor_actual = float(str(monto_vale).replace(',', ''))
-                        valor_2024 = float(str(trx_2024[mes_numero]["monto_vale"]).replace(',', ''))
-                        titulo = "Montos VALE+"
-                    elif opcion_seleccionada == "REVAL":
-                        valor_actual = float(str(monto_reval).replace(',', ''))
-                        valor_2024 = float(str(trx_2024[mes_numero]["monto_reval"]).replace(',', ''))
-                        titulo = "Montos REVAL"
-                    else:  # Total
-                        valor_actual = float(str(monto_total).replace(',', ''))
-                        valor_2024 = float(str(trx_2024[mes_numero]["monto_total"]).replace(',', ''))
-                        titulo = "Montos"
+            # try:
+            if es_mes_historico(mes_numero, mes_actual_num):
+                # 📌 Obtener el valor actual según la opción seleccionada
+                if opcion_seleccionada == "VALE+":
+                    valor_actual = float(str(monto_vale).replace(',', ''))
+                    valor_2024 = float(str(trx_2024[mes_numero]["monto_vale"]).replace(',', ''))
+                    titulo = "Montos VALE+"
+                elif opcion_seleccionada == "REVAL":
+                    valor_actual = float(str(monto_reval).replace(',', ''))
+                    valor_2024 = float(str(trx_2024[mes_numero]["monto_reval"]).replace(',', ''))
+                    titulo = "Montos REVAL"
+                else:  # Total
+                    valor_actual = float(str(monto_total).replace(',', ''))
+                    valor_2024 = float(str(trx_2024[mes_numero]["monto_total"]).replace(',', ''))
+                    titulo = "Montos"
 
-                    # 📌 Debug con valores separados por miles
-                    st.write(f"Valor actual {opcion_seleccionada} (mes seleccionado): {'{:,.0f}'.format(valor_actual)}")
-                    st.write(f"Valor mismo mes año anterior {opcion_seleccionada}: {'{:,.0f}'.format(valor_2024)}")
+                # 📌 Debug con valores separados por miles
+                st.write(f"Valor actual {opcion_seleccionada} (mes seleccionado): {'{:,.0f}'.format(valor_actual)}")
+                st.write(f"Valor mismo mes año anterior {opcion_seleccionada}: {'{:,.0f}'.format(valor_2024)}")
 
-                    # 📌 Abreviar valores correctamente
-                    valor_actual_abrev, sufijo_actual = abreviar_numero(valor_actual)
-                    valor_2024_abrev, sufijo_2024 = abreviar_numero(valor_2024)
+                # 📌 Abreviar valores correctamente
+                valor_actual_abrev, sufijo_actual = abreviar_numero(valor_actual)
+                valor_2024_abrev, sufijo_2024 = abreviar_numero(valor_2024)
 
-                    # 📌 Variaciones
-                    var_anio_anterior = calcular_variacion_porcentual(valor_actual, valor_2024)
+                # 📌 Variaciones
+                var_anio_anterior = calcular_variacion_porcentual(valor_actual, valor_2024)
 
-                    # 📌 Obtener el valor del mes anterior si existe
-                    mes_anterior = mes_numero - 1 if mes_numero > 1 else 12
-                    archivo_mes_anterior = obtener_archivo_por_mes(mes_anterior, meses[mes_anterior])
+                # 📌 Obtener el valor del mes anterior si existe
+                mes_anterior = mes_numero - 1 if mes_numero > 1 else 12
+                archivo_mes_anterior = obtener_archivo_por_mes(mes_anterior, meses[mes_anterior])
 
-                    if archivo_mes_anterior:
-                        df_anterior = pd.read_excel(archivo_mes_anterior)
-                        columna = opcion_seleccionada if opcion_seleccionada != "Total" else "Total"
-                        valor_mes_anterior = float(str(df_anterior[df_anterior["Indicador"] == "Valor transacciones"][columna].values[0]).replace(',', ''))
-                        valor_mes_anterior_abrev, sufijo_anterior = abreviar_numero(valor_mes_anterior)
-                        var_mes_anterior = calcular_variacion_porcentual(valor_actual, valor_mes_anterior)
-
-                        # 📌 Debug con separadores de miles
-                        st.write(f"Valor mes anterior {opcion_seleccionada}: {'{:,.0f}'.format(valor_mes_anterior)}")
-
-                    else:
-                        var_mes_anterior = 0
-                        st.warning(f"No se encontró información para el mes anterior")
-
-                    # 📌 Gráfico con variaciones
-                    fig3 = indicador_con_variacion(
-                        valor_actual=valor_actual_abrev,  # ✅ Valor abreviado
-                        var_mes_anterior=var_mes_anterior,
-                        var_anio_anterior=var_anio_anterior,
-                        titulo=titulo
-                    )
-
-                    fig3.update_traces(
-                        number={
-                            "prefix": "$",
-                            "valueformat": ".2f",
-                            "suffix": sufijo_actual,  # ✅ Usa el sufijo correcto
-                            "font": {"size": 60}
-                        }
-                    )
-
-                    st.plotly_chart(fig3, use_container_width=True, key=f"montos_{opcion_seleccionada}")
-
-                else:
-                    # 📌 Para mes actual (Marzo), mostrar solo el valor sin debug ni variaciones
-                    if opcion_seleccionada == "VALE+":
-                        valor_actual = float(str(trx_2024[3]["monto_vale"]).replace(',', ''))
-                        titulo = "Montos VALE+"
-                    elif opcion_seleccionada == "REVAL":
-                        valor_actual = float(str(trx_2024[3]["monto_reval"]).replace(',', ''))
-                        titulo = "Montos REVAL"
-                    else:
-                        valor_actual = float(str(trx_2024[3]["monto_total"]).replace(',', ''))
-                        titulo = "Montos"
+                if archivo_mes_anterior:
+                    df_anterior = pd.read_excel(archivo_mes_anterior)
+                    columna = opcion_seleccionada if opcion_seleccionada != "Total" else "Total"
+                    valor_mes_anterior = float(str(df_anterior[df_anterior["Indicador"] == "Valor transacciones"][columna].values[0]).replace(',', ''))
+                    valor_mes_anterior_abrev, sufijo_anterior = abreviar_numero(valor_mes_anterior)
+                    var_mes_anterior = calcular_variacion_porcentual(valor_actual, valor_mes_anterior)
 
                     # 📌 Debug con separadores de miles
-                    st.write(f"Valor actual {opcion_seleccionada} (marzo): {'{:,.0f}'.format(valor_actual)}")
+                    st.write(f"Valor mes anterior {opcion_seleccionada}: {'{:,.0f}'.format(valor_mes_anterior)}")
 
-                    # 📌 Aplicar la abreviación correctamente
-                    valor_actual_abrev, sufijo_actual = abreviar_numero(valor_actual)
+                else:
+                    var_mes_anterior = 0
+                    st.warning(f"No se encontró información para el mes anterior")
 
-                    fig3 = go.Figure(go.Indicator(
-                        mode="number",
-                        value=valor_actual_abrev,  # ✅ Usa el valor abreviado
-                        number={
-                            'prefix': "$",
-                            'valueformat': ".2f",
-                            'suffix': sufijo_actual,  # ✅ Usa el sufijo correcto
-                            'font': {'size': 50}
-                        },
-                        title={'text': titulo, 'font': {'size': 20}},
-                    ))
-                    fig3.update_layout(height=350)
-                    st.plotly_chart(fig3, use_container_width=True, key=f"montos_actual_{opcion_seleccionada}")
+                # 📌 Gráfico con variaciones
+                fig3 = indicador_con_variacion(
+                    valor_actual=valor_actual_abrev,  # ✅ Valor abreviado
+                    var_mes_anterior=var_mes_anterior,
+                    var_anio_anterior=var_anio_anterior,
+                    titulo=titulo
+                )
 
-            except Exception as e:
-                st.error(f"❌ Error al procesar montos: {str(e)}")
+                fig3.update_traces(
+                    number={
+                        "prefix": "$",
+                        "valueformat": ".2f",
+                        "suffix": sufijo_actual,  # ✅ Usa el sufijo correcto
+                        "font": {"size": 60}
+                    }
+                )
+
+                st.plotly_chart(fig3, use_container_width=True, key=f"montos_{opcion_seleccionada}")
+
+            else:
+                # 📌 Para mes actual (Marzo), mostrar solo el valor sin debug ni variaciones
+                if opcion_seleccionada == "VALE+":
+                    valor_actual = float(str(df_actual[df_actual["Indicador"] == "Valor transacciones"]["VALE+"].values[0]).replace(',', ''))
+                    titulo = "Montos VALE+"
+                elif opcion_seleccionada == "REVAL":
+                    valor_actual = float(str(df_actual[df_actual["Indicador"] == "Valor transacciones"]["REVAL"].values[0]).replace(',', ''))
+                    titulo = "Montos REVAL"
+                else:
+                    valor_actual = float(str(df_actual[df_actual["Indicador"] == "Valor transacciones"]["Total"].values[0]).replace(',', ''))
+                    titulo = "Montos"
+
+                # 📌 Debug con separadores de miles
+                st.write(f"Valor actual {opcion_seleccionada} (marzo): {'{:,.0f}'.format(valor_actual)}")
+
+                # 📌 Aplicar la abreviación correctamente
+                valor_actual_abrev, sufijo_actual = abreviar_numero(valor_actual)
+
+                fig3 = go.Figure(go.Indicator(
+                    mode="number",
+                    value=valor_actual_abrev,  # ✅ Usa el valor abreviado
+                    number={
+                        'prefix': "$",
+                        'valueformat': ".2f",
+                        'suffix': sufijo_actual,  # ✅ Usa el sufijo correcto
+                        'font': {'size': 50}
+                    },
+                    title={'text': titulo, 'font': {'size': 20}},
+                ))
+                fig3.update_layout(height=350)
+                st.plotly_chart(fig3, use_container_width=True, key=f"montos_actual_{opcion_seleccionada}")
+
+            # except Exception as e:
+            #     st.error(f"❌ Error al procesar montos: {str(e)}")
 
 
         st.markdown("---")
@@ -1472,13 +1624,20 @@ if st.session_state.get('authentication_status'):
             )
 
         try:
+            # Debug: mostrar fecha y hora actual
+            st.write(f"Fecha y hora actual: {datetime.now()}")
+            
             # Construir el nombre del archivo según el mes seleccionado
             mes_actual = datetime.now().month
             año_actual = datetime.now().year
             nombre_mes = meses[mes_numero].lower()
             
-            # # Debug para verificar
-            # st.write(f"Buscando archivos para mes: {nombre_mes} (número: {mes_numero})")
+            # Debug: mostrar información de búsqueda
+            st.write(f"Buscando archivos para:")
+            st.write(f"- Mes seleccionado: {nombre_mes}")
+            st.write(f"- Mes número: {mes_numero}")
+            st.write(f"- Mes actual: {mes_actual}")
+            st.write(f"- Año actual: {año_actual}")
             
             # Si es mes actual, buscar archivos con formato actual
             if mes_numero == mes_actual:
@@ -1491,21 +1650,33 @@ if st.session_state.get('authentication_status'):
                 
                 # Si no encuentra, buscar en el formato antiguo
                 if not os.path.exists(ruta_aperturas) or not os.path.exists(ruta_cierres):
-                    # Intentar encontrar cualquier archivo que coincida con el patrón del mes
+                    # Debug: mostrar que se está buscando en formato antiguo
+                    st.write("Buscando archivos en formato antiguo...")
                     archivos_aperturas = [f for f in os.listdir("Resultado") 
                                         if f.startswith(f"aperturas_") and nombre_mes in f.lower()]
                     archivos_cierres = [f for f in os.listdir("Resultado") 
                                       if f.startswith(f"cierres_") and nombre_mes in f.lower()]
+                    
+                    # Debug: mostrar archivos encontrados
+                    st.write("Archivos de aperturas encontrados:", archivos_aperturas)
+                    st.write("Archivos de cierres encontrados:", archivos_cierres)
                     
                     if archivos_aperturas:
                         ruta_aperturas = os.path.join("Resultado", max(archivos_aperturas))
                     if archivos_cierres:
                         ruta_cierres = os.path.join("Resultado", max(archivos_cierres))
             
-            # # Debug: mostrar las rutas encontradas
-            # st.write("Archivos encontrados:")
-            # st.write(f"- Aperturas: {ruta_aperturas}")
-            # st.write(f"- Cierres: {ruta_cierres}")
+            # Debug: mostrar las rutas finales y fecha de modificación
+            st.write("\nArchivos seleccionados:")
+            if os.path.exists(ruta_aperturas):
+                fecha_mod_aperturas = datetime.fromtimestamp(os.path.getmtime(ruta_aperturas))
+                st.write(f"- Aperturas: {ruta_aperturas}")
+                st.write(f"  Última modificación: {fecha_mod_aperturas}")
+            
+            if os.path.exists(ruta_cierres):
+                fecha_mod_cierres = datetime.fromtimestamp(os.path.getmtime(ruta_cierres))
+                st.write(f"- Cierres: {ruta_cierres}")
+                st.write(f"  Última modificación: {fecha_mod_cierres}")
 
             # Verificar si los archivos existen
             if not os.path.exists(ruta_aperturas) or not os.path.exists(ruta_cierres):

@@ -316,31 +316,77 @@ if st.session_state.get('authentication_status'):
 
     def obtener_archivo_por_mes(mes_numero, mes_nombre):
         try:
-            if mes_numero == datetime.now().month:
-                # Para el mes actual, usar el archivo diario con formato actual
-                return encontrar_archivo_reciente("Resultado", "informe_diario_")
-            else:
-                # Para meses anteriores, intentar usar el archivo mensual con año
-                año_actual = datetime.now().year
-                
-                # Primero intenta buscar el archivo del año actual
-                archivo_mensual = os.path.join("Resultado", f"informe_mensual_{mes_nombre.lower()}_{año_actual}.xlsx")
-                if os.path.exists(archivo_mensual):
-                    return archivo_mensual
-                
-                # Si no existe, busca el archivo del año anterior
-                archivo_mensual_anterior = os.path.join("Resultado", f"informe_mensual_{mes_nombre.lower()}_{año_actual-1}.xlsx")
-                if os.path.exists(archivo_mensual_anterior):
-                    return archivo_mensual_anterior
-                
-                # Si no existe con año, intenta el formato antiguo sin año
-                archivo_mensual_sin_año = os.path.join("Resultado", f"informe_mensual_{mes_nombre.lower()}.xlsx")
-                if os.path.exists(archivo_mensual_sin_año):
-                    return archivo_mensual_sin_año
-                
-                return None  # Retornamos None si no existe ninguna versión del archivo
+            # Debug: mostrar qué estamos buscando
+            st.write(f"Buscando archivo para mes: {mes_nombre} (número: {mes_numero})")
+            
+            año_actual = datetime.now().year
+            
+            # Lista de posibles nombres de archivo
+            posibles_archivos = [
+                # Formato mensual con año
+                os.path.join(RESULTADO_DIR, f"informe_mensual_{mes_nombre.lower()}_{año_actual}.xlsx"),
+                os.path.join(RESULTADO_DIR, f"informe_mensual_{mes_nombre.lower()}_{año_actual-1}.xlsx"),
+                # Formato diario
+                os.path.join(RESULTADO_DIR, f"informe_diario_{año_actual}{mes_numero:02d}*.xlsx"),
+                # Formato antiguo
+                os.path.join(RESULTADO_DIR, f"informe_mensual_{mes_nombre.lower()}.xlsx")
+            ]
+            
+            # Debug: mostrar archivos que buscaremos
+            st.write("Buscando en las siguientes rutas:")
+            for ruta in posibles_archivos:
+                st.write(f"- {ruta}")
+            
+            # Buscar el primer archivo que exista
+            for archivo in posibles_archivos:
+                if '*' in archivo:  # Si es un patrón con wildcard
+                    import glob
+                    matches = glob.glob(archivo)
+                    if matches:
+                        st.write(f"Archivo encontrado: {matches[-1]}")
+                        return matches[-1]
+                elif os.path.exists(archivo):
+                    st.write(f"Archivo encontrado: {archivo}")
+                    return archivo
+            
+            st.warning(f"No se encontró ningún archivo para {mes_nombre}")
+            return None
+            
         except Exception as e:
-            raise Exception(f"Error al obtener archivo: {str(e)}")
+            st.error(f"Error buscando archivo: {str(e)}")
+            return None
+
+    def obtener_datos_mes_anterior(mes_numero, año_actual):
+        """
+        Obtiene los datos del mes anterior, manejando el cambio de año
+        """
+        try:
+            # Calcular mes anterior y año
+            if mes_numero == 1:
+                mes_anterior = 12
+                año_anterior = año_actual - 1
+            else:
+                mes_anterior = mes_numero - 1
+                año_anterior = año_actual
+                
+            mes_anterior_nombre = meses[mes_anterior].lower()
+            
+            # Debug
+            st.write(f"Buscando datos del mes anterior: {mes_anterior_nombre} {año_anterior}")
+            
+            # Intentar obtener archivo del mes anterior
+            archivo_anterior = obtener_archivo_por_mes(mes_anterior, meses[mes_anterior])
+            
+            if archivo_anterior:
+                df_anterior = pd.read_excel(archivo_anterior)
+                df_anterior.columns = ["Indicador", "REVAL", "VALE+", "Total"]
+                return df_anterior
+            
+            return None
+            
+        except Exception as e:
+            st.write(f"Error obteniendo datos del mes anterior: {str(e)}")
+            return None
 
     try:
         # Obtener la ruta del archivo según el mes seleccionado

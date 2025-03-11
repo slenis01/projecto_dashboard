@@ -320,41 +320,51 @@ if st.session_state.get('authentication_status'):
             st.write(f"Buscando archivo para mes: {mes_nombre} (número: {mes_numero})")
             
             año_actual = datetime.now().year
+            mes_lower = mes_nombre.lower()
             
-            # Lista de posibles nombres de archivo
-            posibles_archivos = [
-                # Formato mensual con año
-                os.path.join(RESULTADO_DIR, f"informe_mensual_{mes_nombre.lower()}_{año_actual}.xlsx"),
-                os.path.join(RESULTADO_DIR, f"informe_mensual_{mes_nombre.lower()}_{año_actual-1}.xlsx"),
-                # Formato diario
-                os.path.join(RESULTADO_DIR, f"informe_diario_{año_actual}{mes_numero:02d}*.xlsx"),
-                # Formato antiguo
-                os.path.join(RESULTADO_DIR, f"informe_mensual_{mes_nombre.lower()}.xlsx")
+            # Construir patrones de búsqueda más flexibles
+            patrones = [
+                f"informe_mensual_{mes_lower}_{año_actual}",      # informe_mensual_enero_2025
+                f"informe_mensual_{mes_lower}_{año_actual-1}",    # informe_mensual_enero_2024
+                f"informe_diario_{año_actual}{mes_numero:02d}",   # informe_diario_202501
+                f"informe_mensual_{mes_lower}",                   # informe_mensual_enero
+                f"informe_{mes_lower}_{año_actual}",              # informe_enero_2025
+                f"informe_{mes_lower}"                            # informe_enero
             ]
             
-            # Debug: mostrar archivos que buscaremos
-            st.write("Buscando en las siguientes rutas:")
-            for ruta in posibles_archivos:
-                st.write(f"- {ruta}")
+            # Buscar en la carpeta Resultado
+            for archivo in os.listdir("Resultado"):
+                # Debug: mostrar cada archivo encontrado
+                st.write(f"Revisando archivo: {archivo}")
+                
+                # Verificar si alguno de los patrones coincide
+                for patron in patrones:
+                    if archivo.lower().startswith(patron.lower()) and (archivo.endswith('.xlsx') or archivo.endswith('.xls')):
+                        ruta_completa = os.path.join("Resultado", archivo)
+                        st.write(f"¡Archivo encontrado!: {ruta_completa}")
+                        return ruta_completa
             
-            # Buscar el primer archivo que exista
-            for archivo in posibles_archivos:
-                if '*' in archivo:  # Si es un patrón con wildcard
-                    import glob
-                    matches = glob.glob(archivo)
-                    if matches:
-                        st.write(f"Archivo encontrado: {matches[-1]}")
-                        return matches[-1]
-                elif os.path.exists(archivo):
-                    st.write(f"Archivo encontrado: {archivo}")
-                    return archivo
-            
+            # Si no se encontró ningún archivo
             st.warning(f"No se encontró ningún archivo para {mes_nombre}")
             return None
             
         except Exception as e:
             st.error(f"Error buscando archivo: {str(e)}")
+            st.write("Detalles del error:", str(e))
             return None
+
+    # Función auxiliar para listar todos los archivos en el directorio
+    def mostrar_archivos_disponibles():
+        st.write("Archivos disponibles en el directorio Resultado:")
+        try:
+            archivos = os.listdir("Resultado")
+            for archivo in archivos:
+                st.write(f"- {archivo}")
+        except Exception as e:
+            st.error(f"Error al listar archivos: {str(e)}")
+
+    # Llamar a la función auxiliar antes de buscar el archivo
+    mostrar_archivos_disponibles()
 
     def obtener_datos_mes_anterior(mes_numero, año_actual):
         """

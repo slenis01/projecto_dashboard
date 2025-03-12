@@ -1651,20 +1651,20 @@ if st.session_state.get('authentication_status'):
             )
 
         try:
-            # Debug: mostrar fecha y hora actual
-            st.write(f"Fecha y hora actual: {datetime.now()}")
+            # # Debug: mostrar fecha y hora actual
+            # st.write(f"Fecha y hora actual: {datetime.now()}")
             
             # Construir el nombre del archivo según el mes seleccionado
             mes_actual = datetime.now().month
             año_actual = datetime.now().year
             nombre_mes = meses[mes_numero].lower()
             
-            # Debug: mostrar información de búsqueda
-            st.write(f"Buscando archivos para:")
-            st.write(f"- Mes seleccionado: {nombre_mes}")
-            st.write(f"- Mes número: {mes_numero}")
-            st.write(f"- Mes actual: {mes_actual}")
-            st.write(f"- Año actual: {año_actual}")
+            # # Debug: mostrar información de búsqueda
+            # st.write(f"Buscando archivos para:")
+            # st.write(f"- Mes seleccionado: {nombre_mes}")
+            # st.write(f"- Mes número: {mes_numero}")
+            # st.write(f"- Mes actual: {mes_actual}")
+            # st.write(f"- Año actual: {año_actual}")
             
             # Si es mes actual, buscar archivos con formato actual
             if mes_numero == mes_actual:
@@ -1694,27 +1694,27 @@ if st.session_state.get('authentication_status'):
                         ruta_cierres = os.path.join("Resultado", max(archivos_cierres))
             
             # Debug: mostrar las rutas finales y fecha de modificación
-            st.write("\nArchivos seleccionados:")
+            # st.write("\nArchivos seleccionados:")
             if os.path.exists(ruta_aperturas):
                 fecha_mod_aperturas = datetime.fromtimestamp(os.path.getmtime(ruta_aperturas))
-                st.write(f"- Aperturas: {ruta_aperturas}")
-                st.write(f"  Última modificación: {fecha_mod_aperturas}")
+                # st.write(f"- Aperturas: {ruta_aperturas}")
+                # st.write(f"  Última modificación: {fecha_mod_aperturas}")
             
             if os.path.exists(ruta_cierres):
                 fecha_mod_cierres = datetime.fromtimestamp(os.path.getmtime(ruta_cierres))
-                st.write(f"- Cierres: {ruta_cierres}")
-                st.write(f"  Última modificación: {fecha_mod_cierres}")
+                # st.write(f"- Cierres: {ruta_cierres}")
+                # st.write(f"  Última modificación: {fecha_mod_cierres}")
 
             # Verificar si los archivos existen
             if not os.path.exists(ruta_aperturas) or not os.path.exists(ruta_cierres):
                 st.warning(f"⚠️ No se encontraron archivos para el mes {mes_seleccionado}")
                 
-                # Mostrar los archivos disponibles para diagnóstico
-                st.write("Archivos disponibles en el directorio:")
-                archivos_disponibles = [f for f in os.listdir("Resultado") 
-                                      if f.startswith(("aperturas", "cierres"))]
-                for archivo in sorted(archivos_disponibles):
-                    st.write(f"- {archivo}")
+                # # Mostrar los archivos disponibles para diagnóstico
+                # st.write("Archivos disponibles en el directorio:")
+                # archivos_disponibles = [f for f in os.listdir("Resultado") 
+                #                       if f.startswith(("aperturas", "cierres"))]
+                # for archivo in sorted(archivos_disponibles):
+                #     st.write(f"- {archivo}")
                     
                 st.stop()
 

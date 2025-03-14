@@ -247,22 +247,23 @@ if st.session_state.get('authentication_status'):
         Encuentra el archivo más reciente con manejo de rutas absolutas
         """
         try:
-            # Usar ruta absoluta
             ruta_absoluta = os.path.join(BASE_PATH, directorio)
-            
-            # # Debug para verificar rutas
-            # st.write(f"Buscando en: {ruta_absoluta}")
-            # st.write(f"Buscando archivos con prefijo: {prefijo}")
             
             if not os.path.exists(ruta_absoluta):
                 st.error(f"Directorio no encontrado: {ruta_absoluta}")
                 return None
 
+            # Obtener la fecha actual
+            fecha_actual = datetime.now()
+            mes_actual = fecha_actual.strftime('%m')
+            año_actual = fecha_actual.strftime('%Y')
+            
+            # Filtrar archivos que cumplan con el formato y sean del mes actual
             archivos = [f for f in os.listdir(ruta_absoluta) 
                        if f.startswith(prefijo) and (f.endswith('.csv') or f.endswith('.xlsx'))]
             
             if not archivos:
-                st.warning(f"No se encontraron archivos con prefijo {prefijo}")
+                st.warning(f"No se encontraron archivos con prefijo {prefijo} para el mes actual")
                 return None
 
             archivo_reciente = max(archivos)
@@ -1668,8 +1669,9 @@ if st.session_state.get('authentication_status'):
             
             # Si es mes actual, buscar archivos con formato actual
             if mes_numero == mes_actual:
-                ruta_aperturas = encontrar_archivo_reciente("Resultado", "aperturas_")
-                ruta_cierres = encontrar_archivo_reciente("Resultado", "cierres_")
+                # Modificar para buscar específicamente archivos diarios
+                ruta_aperturas = encontrar_archivo_reciente("Resultado", "aperturas_diario_")
+                ruta_cierres = encontrar_archivo_reciente("Resultado", "cierres_diario_")
             else:
                 # Para meses anteriores, buscar primero en el formato mes_[MES]
                 ruta_aperturas = os.path.join("Resultado", f"aperturas_mes_{nombre_mes}_{año_actual}.csv")
@@ -1684,9 +1686,9 @@ if st.session_state.get('authentication_status'):
                     archivos_cierres = [f for f in os.listdir("Resultado") 
                                       if f.startswith(f"cierres_") and nombre_mes in f.lower()]
                     
-                    # Debug: mostrar archivos encontrados
-                    st.write("Archivos de aperturas encontrados:", archivos_aperturas)
-                    st.write("Archivos de cierres encontrados:", archivos_cierres)
+                    # # Debug: mostrar archivos encontrados
+                    # st.write("Archivos de aperturas encontrados:", archivos_aperturas)
+                    # st.write("Archivos de cierres encontrados:", archivos_cierres)
                     
                     if archivos_aperturas:
                         ruta_aperturas = os.path.join("Resultado", max(archivos_aperturas))

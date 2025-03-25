@@ -1589,7 +1589,7 @@ if st.session_state.get('authentication_status'):
             
             fig = crear_gauge(
                 valor=float(str(puntos_bloqueados_df).replace('%', '')),
-                titulo="Tasa de activación de puntos bloqueados",
+                titulo="Tasa activación puntos bloqueados",
                 meta=meta_tasa_activacion,  #revisar tasa de activacion
                 rango_max=100
             )

@@ -1461,6 +1461,10 @@ if st.session_state.get('authentication_status'):
                         meta=meta_nps,
                         rango_max=100
                     )
+                    # Actualizar el formato del número para mostrar 2 decimales
+                    fig.update_traces(
+                        number={'suffix': '%', 'font': {'size': 50}, 'valueformat': '.2f'}
+                    )
                     st.plotly_chart(fig, use_container_width=True)
             else:
                 # Para mes actual
@@ -1483,6 +1487,10 @@ if st.session_state.get('authentication_status'):
                                 meta=meta_nps,
                                 rango_max=100
                             )
+                            # Actualizar el formato del número para mostrar 2 decimales
+                            fig.update_traces(
+                                number={'suffix': '%', 'font': {'size': 50}, 'valueformat': '.2f'}
+                            )
                             st.plotly_chart(fig, use_container_width=True)
                 except Exception as e:
                     st.error(f"Error al procesar NPS actual: {str(e)}")
@@ -1496,7 +1504,10 @@ if st.session_state.get('authentication_status'):
                 rango_max=5,
                 mostrar_porcentaje=False
             )
-            
+            # Actualizar el formato del número para mostrar 2 decimales
+            fig.update_traces(
+                number={'font': {'size': 50}, 'valueformat': '.2f'}
+            )
             st.plotly_chart(fig, use_container_width=True)
 
 
